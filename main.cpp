@@ -46,6 +46,9 @@ void printSellerMenu();
 void loadSellerItems();
 void addSellerItem();
 void viewSellerItem();
+void sellerItemExtendedView(int itemIndex);
+void updateItemScreen();
+void updateItemDetails(int itemIndex);
 
 void signUpUser();
 
@@ -180,6 +183,7 @@ void printSellerMenu() {
 }
 
 void loadSellerItems() {
+    displayItems = 0;
     for (int i = 0; i < sellingItems; i++) {
         if (sellerIds[i] == sessionUserIndex) {
             displayItemIndex[displayItems] = i;
@@ -252,7 +256,118 @@ void viewSellerItem() {
     int itemIndex;
     printTitle("Seller > View Items");
     itemIndex = displayItemsPage();
-    sellerItemExtendedView(itemIndex);
+    if (itemIndex != -1) {
+        sellerItemExtendedView(itemIndex);
+    }
+}
+
+void sellerItemExtendedView(int itemIndex) {
+    string itemName = itemNames[itemIndex];
+    printTitle("Seller > View Items > " + itemName);
+    cout << setw(optionsPadding) << "" << "Item Name: " << itemName << endl;
+    cout << setw(optionsPadding) << "" << "Item Description: " << itemDescriptions[itemIndex] << endl;
+    cout << setw(optionsPadding) << "" << "Item Category: " << itemCategories[itemIndex] << endl;
+    cout << setw(optionsPadding) << "" << "Item Price: PKR " << itemPrices[itemIndex] << endl;
+    cout << setw(optionsPadding) << "" << "Item Remaning Quantity: " << itemQuantities[itemIndex] - itemSold[itemIndex] << endl;
+    cout << setw(optionsPadding) << "" << "Item Sold: " << itemSold[itemIndex] << endl;
+    cout << endl;
+
+    cout << setw(optionsPadding) << "" << "   Update Item Details" << endl;
+    cout << setw(optionsPadding) << "" << "   Remove Item From Market Place" << endl;
+    cout << setw(optionsPadding) << "" << "   Go Back" << endl;
+    int option = handleOptionSelection(optionsPadding, wherey() - 3, 3, 1, false);
+    if (option == 1) {
+        updateItemDetails(itemIndex);
+    } else if (option == 2) {
+        // removeSellerItem();
+    }
+}
+
+void updateItemScreen() {
+    int itemIndex;
+    printTitle("Seller > Update Items");
+    itemIndex = displayItemsPage();
+    if (itemIndex != -1) {
+        updateItemDetails(itemIndex);
+    }
+}
+
+void updateItemDetails(int itemIndex) {
+    string itemName, itemDescription;
+    int additionalStock;
+    float itemPrice;
+    string displayName = itemNames[itemIndex];
+    bool onUpdateScreen = true;
+    int option;
+    while (onUpdateScreen) {
+        printTitle("Seller > Update Item > " + displayName);
+        cout << setw(optionsPadding) << "" << "Select Attribute to Update: " << endl;
+        cout << setw(optionsPadding) << "" << "   Item Name" << endl;
+        cout << setw(optionsPadding) << "" << "   Item Description" << endl;
+        cout << setw(optionsPadding) << "" << "   Item Price" << endl;
+        cout << setw(optionsPadding) << "" << "   Add More Stock" << endl;
+        cout << setw(optionsPadding) << "" << "   Go Back" << endl;
+        int currentY = wherey();
+        option = handleOptionSelection(optionsPadding, currentY - 5, 5, 1, false);
+        gotoPosition(0, currentY + 1);
+        showConsoleCursor(true);
+        if (option == 1) {
+            cout << setw(optionsPadding) << "" << "Updated Item Name: ";
+            cin.clear();
+            cin.sync();
+            getline(cin, itemName);
+            cout << endl;
+            if (detectCommas(itemName)) {
+                cout << setw(optionsPadding) << "" << "Invalid Input!!!" << endl;
+                cout << setw(optionsPadding) << "" << "Item Name Cannot Contains Commas" << endl;
+                if (!tryAgainDialog()) {
+                    onUpdateScreen = false;
+                }
+            } else {
+                itemNames[itemIndex] = itemName;
+                cout << setw(optionsPadding) << "" << "Item Name Updated Sucessfully!!!" << endl;
+                confirmationDialog();
+                onUpdateScreen = false;
+            }
+        } else if (option == 2) {
+            cout << setw(optionsPadding) << "" << "Updated Item Description: ";
+            cin.clear();
+            cin.sync();
+            getline(cin, itemDescription);
+            cout << endl;
+            if (detectCommas(itemDescription)) {
+                cout << setw(optionsPadding) << "" << "Invalid Input!!!" << endl;
+                cout << setw(optionsPadding) << "" << "Item Description Cannot Contains Commas" << endl;
+                if (!tryAgainDialog()) {
+                    onUpdateScreen = false;
+                }
+            } else {
+                itemDescriptions[itemIndex] = itemDescription;
+                cout << setw(optionsPadding) << "" << "Item Description Updated Sucessfully!!!" << endl;
+                confirmationDialog();
+                onUpdateScreen = false;
+            }
+        } else if (option == 3) {
+            cout << setw(optionsPadding) << "" << "Updated Item Price: ";
+            cin >> itemPrice;
+            cout << endl;
+            itemPrices[itemIndex] = itemPrice;
+            cout << setw(optionsPadding) << "" << "Item Price Updated Sucessfully!!!" << endl;
+            confirmationDialog();
+            onUpdateScreen = false;
+        } else if (option == 4) {
+            cout << setw(optionsPadding) << "" << "Add Additional Stock: ";
+            cin >> additionalStock;
+            cout << endl;
+            itemQuantities[itemIndex] += additionalStock;
+            cout << setw(optionsPadding) << "" << "Item Quantity Updated Sucessfully!!!" << endl;
+            confirmationDialog();
+            onUpdateScreen = false;
+        } else {
+            onUpdateScreen = false;
+        }
+        showConsoleCursor(false);
+    }
 }
 
 void signUpUser() {
@@ -524,7 +639,7 @@ int displayItemsPage() {
             return displayItemIndex[startValue + option - 1];
         }
     }
-    return 0;
+    return -1;
 }
 
 void clearItems(int startingY) {
