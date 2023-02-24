@@ -27,6 +27,9 @@ float itemPrices[ARRAY_SIZE];
 int itemQuantities[ARRAY_SIZE];
 int itemSold[ARRAY_SIZE];
 
+// Display Data
+int displayItems;
+int displayItemIndex[ARRAY_SIZE];
 
 int TERMINAL_WIDTH, TERMINAL_HEIGHT;
 int HEADER_WIDTH, HEADER_HEIGHT;
@@ -40,7 +43,9 @@ void printMainScreen();
 void loginUser();
 void openSellerAccount();
 void printSellerMenu();
+void loadSellerItems();
 void addSellerItem();
+void viewSellerItem();
 
 void signUpUser();
 
@@ -56,6 +61,8 @@ void setTerminalDimensions();
 string parseCSV(string dataText, int index);
 void confirmationDialog();
 bool tryAgainDialog();
+int displayItemsPage();
+void clearItems(int startingY);
 
 void printTitle(string title);
 void printHeader();
@@ -112,7 +119,6 @@ void loginUser() {
 
     while (onLoginScreen) {
         printTitle("Login");
-        cout << endl;
         showConsoleCursor(true);
         cout << setw(optionsPadding) << "" << "Username: ";
         cin >> username;
@@ -136,6 +142,7 @@ void loginUser() {
     }
     if (loggedIn) {
         if (userTypes[sessionUserIndex] == "Seller") {
+            loadSellerItems();
             openSellerAccount();
         } else {
             // buyerScreen();
@@ -153,6 +160,10 @@ void openSellerAccount() {
         option = handleOptionSelection(optionsPadding, wherey() - options, options, 1, false);
         if (option == 1) {
             addSellerItem();
+        } else if (option == 2) {
+            viewSellerItem();
+        } else {
+            onSellerScreen = false;
         }
     }
 }
@@ -168,6 +179,15 @@ void printSellerMenu() {
     cout << setw(optionsPadding) << "" << "   Go Back" << endl;
 }
 
+void loadSellerItems() {
+    for (int i = 0; i < sellingItems; i++) {
+        if (sellerIds[i] == sessionUserIndex) {
+            displayItemIndex[displayItems] = i;
+            displayItems++;
+        }
+    }
+}
+
 void addSellerItem() {
     string categories[] = { "Cosmetics", "Electronics", "Consoles and Gaming", "Toys", "Home Appliances", "Sports Accessories", "Health and Beauty", "Groceries" };
     int option;
@@ -180,7 +200,6 @@ void addSellerItem() {
         containCommas = false;
         printTitle("Seller > Add Item");
         showConsoleCursor(true);
-        cout << endl;
         cout << setw(optionsPadding) << "" << "Item Name: ";
         cin.clear();
         cin.sync();
@@ -213,8 +232,10 @@ void addSellerItem() {
             itemQuantities[sellingItems] = itemQuantity;
             itemSold[sellingItems] = 0;
             writeItemData();
-            sellingItems++;
             addingItem = false;
+            displayItemIndex[displayItems] = sellingItems;
+            sellingItems++;
+            displayItems++;
             cout << setw(optionsPadding) << "" << "Item Add Sucessfully!!!" << endl << endl;
             confirmationDialog();
         } else {
@@ -227,6 +248,12 @@ void addSellerItem() {
     }
 }
 
+void viewSellerItem() {
+    int itemIndex;
+    printTitle("Seller > View Items");
+    itemIndex = displayItemsPage();
+    sellerItemExtendedView(itemIndex);
+}
 
 void signUpUser() {
     int option;
@@ -239,7 +266,6 @@ void signUpUser() {
     while (onSignUpScreen) {
         containCommas = false;
         printTitle("Sign Up");
-        cout << endl;
 
         cout << setw(optionsPadding) << "" << "Select Account Type: " << endl;
         cout << setw(optionsPadding) << "" << "   Seller" << endl;
@@ -447,6 +473,69 @@ bool tryAgainDialog() {
     cout << setw(optionsPadding) << "" << "   Go Back" << endl;
     int option = handleOptionSelection(optionsPadding, wherey() - 2, 2, 1, false);
     return (option == 1);
+}
+
+int displayItemsPage() {
+    int itemIndex, option;
+    int startingY = wherey();
+    int itemsPerScreen = (TERMINAL_HEIGHT - startingY - 3) / 4;
+    bool onDisplayScreen = true, isScrollable = false;
+    int startValue = 0;
+    int endValue = (displayItems < itemsPerScreen) ? displayItems : itemsPerScreen;
+    if (displayItems > itemsPerScreen) {
+        gotoPosition((TERMINAL_WIDTH - 52) / 2, TERMINAL_HEIGHT - 1);
+        cout << "USE RIGHT AND LEFT ARROW KEY TO SCROLL BETWEEN PAGES";
+        isScrollable = true;
+    }
+    while (onDisplayScreen) {
+        clearItems(startingY);
+        for (int i = startValue; i < endValue; i++) {
+            itemIndex = displayItemIndex[i];
+            cout << setw(optionsPadding) << "" << "   " << itemNames[itemIndex] << endl;
+            cout << setw(optionsPadding) << "" << "   PKR " << itemPrices[itemIndex] << " - ";
+            cout << ((itemQuantities[itemIndex] == itemSold[itemIndex]) ? "Out-Of-Stock" : "In-Stock");
+            cout << endl;
+            cout << setw(optionsPadding) << "" << "   Seller: ";
+            cout << ((sellerIds[itemIndex] == sessionUserIndex) ? "You" : userfullNames[sellerIds[itemIndex]]);
+            cout << endl << endl;
+        }
+        cout << setw(optionsPadding) << "" << "   Go Back" << endl;
+        option = handleOptionSelection(optionsPadding, startingY, endValue - startValue + 1, 4, isScrollable);
+        if (option == endValue - startValue + 1) {
+            onDisplayScreen = false;
+        } else if (option == -1) {
+            if (displayItems > endValue) {
+                startValue += itemsPerScreen;
+                endValue += itemsPerScreen;
+            }
+            if (endValue > displayItems) {
+                endValue = displayItems;
+            }
+        } else if (option == -2) {
+            if (startValue != 0) {
+                startValue -= itemsPerScreen;
+                if (endValue % itemsPerScreen != 0) {
+                    endValue -= endValue % itemsPerScreen;
+                } else {
+                    endValue -= itemsPerScreen;
+                }
+            }
+        } else {
+            return displayItemIndex[startValue + option - 1];
+        }
+    }
+    return 0;
+}
+
+void clearItems(int startingY) {
+    gotoPosition(0, startingY);
+    for (int i = startingY; i < TERMINAL_HEIGHT - 1; i++) {
+        for (int j = 0; j < TERMINAL_WIDTH; j++) {
+            cout << " ";
+        }
+        cout << endl;
+    }
+    gotoPosition(0, startingY);
 }
 
 void printTitle(string title) {
