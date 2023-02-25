@@ -821,6 +821,11 @@ int handleOptionSelection(int arrowX, int arrowY, int numberOfOptions, int offse
             break;
         } else if (key == backspaceKey) {
             return numberOfOptions;
+        } else if (key >= 49 && key <= 57) {
+            int keyDiff = key - 48;
+            if (keyDiff <= numberOfOptions) {
+                return keyDiff;
+            }
         }
         if (isScrollable) {
             if (key == rightKey) {
