@@ -49,6 +49,10 @@ void viewSellerItem();
 void sellerItemExtendedView(int itemIndex);
 void updateItemScreen();
 void updateItemDetails(int itemIndex);
+void removeSellerItemScreen();
+void removeSellerItem(int itemIndex);
+void removeItem(int itemIndex);
+void viewSellerStats();
 
 void signUpUser();
 
@@ -59,6 +63,7 @@ bool detectCommas(string text);
 void loadFiles();
 void writeUsersData();
 void writeItemData();
+void reWriteSellerData();
 
 void setTerminalDimensions();
 string parseCSV(string dataText, int index);
@@ -131,12 +136,12 @@ void loginUser() {
         cout << endl;
 
         if (validateLogin(username, password)) {
-            cout << setw(optionsPadding) << "" << "Login Sucessful" << endl << endl;
+            cout << setw(optionsPadding) << "" << "Login Sucessful!!!" << endl << endl;
             onLoginScreen = false;
             loggedIn = true;
             confirmationDialog();
         } else {
-            cout << setw(optionsPadding) << "" << "Login Failed" << endl;
+            cout << setw(optionsPadding) << "" << "Login Failed!!!" << endl;
             cout << setw(optionsPadding) << "" << "Incorrect Username/Password" << endl << endl;
             if (!tryAgainDialog()) {
                 onLoginScreen = false;
@@ -165,6 +170,10 @@ void openSellerAccount() {
             addSellerItem();
         } else if (option == 2) {
             viewSellerItem();
+        } else if (option == 3) {
+            updateItemScreen();
+        } else if (option == 4) {
+            removeSellerItemScreen();
         } else {
             onSellerScreen = false;
         }
@@ -263,32 +272,42 @@ void viewSellerItem() {
 
 void sellerItemExtendedView(int itemIndex) {
     string itemName = itemNames[itemIndex];
-    printTitle("Seller > View Items > " + itemName);
-    cout << setw(optionsPadding) << "" << "Item Name: " << itemName << endl;
-    cout << setw(optionsPadding) << "" << "Item Description: " << itemDescriptions[itemIndex] << endl;
-    cout << setw(optionsPadding) << "" << "Item Category: " << itemCategories[itemIndex] << endl;
-    cout << setw(optionsPadding) << "" << "Item Price: PKR " << itemPrices[itemIndex] << endl;
-    cout << setw(optionsPadding) << "" << "Item Remaning Quantity: " << itemQuantities[itemIndex] - itemSold[itemIndex] << endl;
-    cout << setw(optionsPadding) << "" << "Item Sold: " << itemSold[itemIndex] << endl;
-    cout << endl;
+    bool viewingItem = true;
+    while (viewingItem) {
+        printTitle("Seller > View Items > " + itemName);
+        cout << setw(optionsPadding) << "" << "Item Name: " << itemName << endl;
+        cout << setw(optionsPadding) << "" << "Item Description: " << itemDescriptions[itemIndex] << endl;
+        cout << setw(optionsPadding) << "" << "Item Category: " << itemCategories[itemIndex] << endl;
+        cout << setw(optionsPadding) << "" << "Item Price: PKR " << itemPrices[itemIndex] << endl;
+        cout << setw(optionsPadding) << "" << "Item Remaning Quantity: " << itemQuantities[itemIndex] - itemSold[itemIndex] << endl;
+        cout << setw(optionsPadding) << "" << "Item Sold: " << itemSold[itemIndex] << endl;
+        cout << endl;
 
-    cout << setw(optionsPadding) << "" << "   Update Item Details" << endl;
-    cout << setw(optionsPadding) << "" << "   Remove Item From Market Place" << endl;
-    cout << setw(optionsPadding) << "" << "   Go Back" << endl;
-    int option = handleOptionSelection(optionsPadding, wherey() - 3, 3, 1, false);
-    if (option == 1) {
-        updateItemDetails(itemIndex);
-    } else if (option == 2) {
-        // removeSellerItem();
+        cout << setw(optionsPadding) << "" << "   Update Item Details" << endl;
+        cout << setw(optionsPadding) << "" << "   Remove Item From Market Place" << endl;
+        cout << setw(optionsPadding) << "" << "   Go Back" << endl;
+        int option = handleOptionSelection(optionsPadding, wherey() - 3, 3, 1, false);
+        if (option == 1) {
+            updateItemDetails(itemIndex);
+        } else if (option == 2) {
+            removeSellerItem(itemIndex);
+        } else {
+            viewingItem = false;
+        }
     }
 }
 
 void updateItemScreen() {
     int itemIndex;
-    printTitle("Seller > Update Items");
-    itemIndex = displayItemsPage();
-    if (itemIndex != -1) {
-        updateItemDetails(itemIndex);
+    bool onUpdateScreen = true;
+    while (onUpdateScreen) {
+        printTitle("Seller > Update Item");
+        itemIndex = displayItemsPage();
+        if (itemIndex != -1) {
+            updateItemDetails(itemIndex);
+        } else {
+            onUpdateScreen = false;
+        }
     }
 }
 
@@ -367,7 +386,63 @@ void updateItemDetails(int itemIndex) {
             onUpdateScreen = false;
         }
         showConsoleCursor(false);
+        reWriteSellerData();
     }
+}
+
+void removeSellerItemScreen() {
+    int itemIndex;
+    bool onRemoveScreen = true;
+    while (onRemoveScreen) {
+        printTitle("Seller > Remove Item");
+        itemIndex = displayItemsPage();
+        if (itemIndex != -1) {
+            removeSellerItem(itemIndex);
+        } else {
+            onRemoveScreen = false;
+        }
+    }
+}
+
+void removeSellerItem(int itemIndex) {
+    string itemName = itemNames[itemIndex];
+    printTitle("Seller > Remove Item > " + itemName);
+    cout << setw(optionsPadding) << "" << "Are You Sure You want to remove " << itemName << " from Marketplace?" << endl;
+    cout << setw(optionsPadding) << "" << endl;
+    cout << setw(optionsPadding) << "" << "   Yes" << endl;
+    cout << setw(optionsPadding) << "" << "   Cancel" << endl;
+    int option = handleOptionSelection(optionsPadding, wherey() - 2, 2, 1, false);
+    if (option == 1) {
+        removeItem(itemIndex);
+    }
+}
+
+void removeItem(int itemIndex) {
+    int i = 0;
+    while (i < sellingItems) {
+        if (itemIndex == i) {
+            for (int j = i; i < sellingItems - 1; i++) {
+                sellerIds[j] = sellerIds[j + 1];
+                itemNames[j] = itemNames[j + 1];
+                itemDescriptions[j] = itemDescriptions[j + 1];
+                itemCategories[j] = itemCategories[j + 1];
+                itemPrices[j] = itemPrices[j + 1];
+                itemQuantities[j] = itemQuantities[j + 1];
+                itemSold[j] = itemSold[j + 1];
+            }
+            break;
+        } else {
+            i++;
+        }
+    }
+    sellingItems--;
+    loadSellerItems();
+    reWriteSellerData();
+}
+
+void viewSellerStats() {
+    printTitle("Seller > View Stats");
+
 }
 
 void signUpUser() {
@@ -505,6 +580,15 @@ void writeItemData() {
     sellersFileHandle.close();
 }
 
+void reWriteSellerData() {
+    fstream sellersFileHandle;
+    sellersFileHandle.open(sellersFile, ios::out);
+    for (int i = 0; i < sellingItems; i++) {
+        sellersFileHandle << sellerIds[i] << "," << itemNames[i] << "," << itemDescriptions[i] << "," << itemCategories[i] << ",";
+        sellersFileHandle << itemPrices[i] << "," << itemQuantities[i] << "," << itemSold[i] << endl;
+    }
+    sellersFileHandle.close();
+}
 
 bool validateLogin(string username, string password) {
     bool loginSucessful = false;
