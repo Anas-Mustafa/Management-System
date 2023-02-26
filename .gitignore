@@ -2,3 +2,5 @@
 .vscode/
 sellersData.csv
 usersData.csv
+cartData.csv
+orderData.csv
