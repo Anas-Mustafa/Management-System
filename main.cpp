@@ -27,6 +27,24 @@ float itemPrices[ARRAY_SIZE];
 int itemQuantities[ARRAY_SIZE];
 int itemSold[ARRAY_SIZE];
 
+// Buyers Data
+string cartFile = "cartData.csv";
+int cartItems = 0;
+int cartItemIds[ARRAY_SIZE];
+int cartBuyerIds[ARRAY_SIZE];
+float cartItemPrices[ARRAY_SIZE];
+int cartItemQuantities[ARRAY_SIZE];
+
+string orderFile = "orderData.csv";
+int orderItems = 0;
+int orderItemIds[ARRAY_SIZE];
+int orderBuyerIds[ARRAY_SIZE];
+float orderItemPrices[ARRAY_SIZE];
+int orderItemQuantities[ARRAY_SIZE];
+int orderItemTrackingCodes[ARRAY_SIZE];
+string orderDates[ARRAY_SIZE];
+int orderArrivalTimes[ARRAY_SIZE];
+
 // Display Data
 int displayItems;
 int displayItemIndex[ARRAY_SIZE];
@@ -61,6 +79,8 @@ void printBuyerMenu();
 void viewMarketPlace();
 void searchMarketPlace();
 void shopByCategories();
+void buyerCategoryExtendedView(string categoryName);
+void buyerItemExtendedView(int itemIndex, string title);
 
 bool validateLogin(string username, string password);
 bool uniqueUsername(string username);
@@ -68,7 +88,7 @@ bool detectCommas(string text);
 
 void loadFiles();
 void writeUsersData();
-void writeItemData();
+void writeSellerData();
 void reWriteSellerData();
 
 void setTerminalDimensions();
@@ -142,7 +162,7 @@ void loginUser() {
         cout << endl;
 
         if (validateLogin(username, password)) {
-            cout << setw(optionsPadding) << "" << "Login Sucessful!!!" << endl << endl;
+            cout << setw(optionsPadding) << "" << "Login Successful!!!" << endl << endl;
             onLoginScreen = false;
             loggedIn = true;
             confirmationDialog();
@@ -252,12 +272,12 @@ void addSellerItem() {
             itemPrices[sellingItems] = itemPrice;
             itemQuantities[sellingItems] = itemQuantity;
             itemSold[sellingItems] = 0;
-            writeItemData();
+            writeSellerData();
             addingItem = false;
             displayItemIndex[displayItems] = sellingItems;
             sellingItems++;
             displayItems++;
-            cout << setw(optionsPadding) << "" << "Item Add Sucessfully!!!" << endl << endl;
+            cout << setw(optionsPadding) << "" << "Item Add Successfully!!!" << endl << endl;
             confirmationDialog();
         } else {
             cout << setw(optionsPadding) << "" << "Could Not Add Item!!!" << endl;
@@ -292,7 +312,7 @@ void sellerItemExtendedView(int itemIndex) {
         cout << setw(optionsPadding) << "" << "Item Description: " << itemDescriptions[itemIndex] << endl;
         cout << setw(optionsPadding) << "" << "Item Category: " << itemCategories[itemIndex] << endl;
         cout << setw(optionsPadding) << "" << "Item Price: PKR " << itemPrices[itemIndex] << endl;
-        cout << setw(optionsPadding) << "" << "Item Remaning Quantity: " << itemQuantities[itemIndex] - itemSold[itemIndex] << endl;
+        cout << setw(optionsPadding) << "" << "Item Remaining Quantity: " << itemQuantities[itemIndex] - itemSold[itemIndex] << endl;
         cout << setw(optionsPadding) << "" << "Item Sold: " << itemSold[itemIndex] << endl;
         cout << endl;
 
@@ -358,7 +378,7 @@ void updateItemDetails(int itemIndex) {
                 }
             } else {
                 itemNames[itemIndex] = itemName;
-                cout << setw(optionsPadding) << "" << "Item Name Updated Sucessfully!!!" << endl;
+                cout << setw(optionsPadding) << "" << "Item Name Updated Successfully!!!" << endl;
                 confirmationDialog();
                 onUpdateScreen = false;
             }
@@ -376,7 +396,7 @@ void updateItemDetails(int itemIndex) {
                 }
             } else {
                 itemDescriptions[itemIndex] = itemDescription;
-                cout << setw(optionsPadding) << "" << "Item Description Updated Sucessfully!!!" << endl;
+                cout << setw(optionsPadding) << "" << "Item Description Updated Successfully!!!" << endl;
                 confirmationDialog();
                 onUpdateScreen = false;
             }
@@ -385,7 +405,7 @@ void updateItemDetails(int itemIndex) {
             cin >> itemPrice;
             cout << endl;
             itemPrices[itemIndex] = itemPrice;
-            cout << setw(optionsPadding) << "" << "Item Price Updated Sucessfully!!!" << endl;
+            cout << setw(optionsPadding) << "" << "Item Price Updated Successfully!!!" << endl;
             confirmationDialog();
             onUpdateScreen = false;
         } else if (option == 4) {
@@ -393,7 +413,7 @@ void updateItemDetails(int itemIndex) {
             cin >> additionalStock;
             cout << endl;
             itemQuantities[itemIndex] += additionalStock;
-            cout << setw(optionsPadding) << "" << "Item Quantity Updated Sucessfully!!!" << endl;
+            cout << setw(optionsPadding) << "" << "Item Quantity Updated Successfully!!!" << endl;
             confirmationDialog();
             onUpdateScreen = false;
         } else {
@@ -498,37 +518,58 @@ void printBuyerMenu() {
 }
 
 void viewMarketPlace() {
-    printTitle("Buyer > Market Place");
-    displayItems = 0;
-    for (int i = 0; i < sellingItems; i++) {
-        displayItemIndex[displayItems] = i;
-        displayItems++;
-    }
-    displayItemsPage();
-}
-
-void searchMarketPlace() {
-    string query;
-    displayItems = 0;
-    printTitle("Buyer > Search Market Place");
-    showConsoleCursor(true);
-    cout << setw(optionsPadding) << "" << "Search: ";
-    cin.clear();
-    cin.sync();
-    getline(cin, query);
-    showConsoleCursor(false);
-    cout << endl;
-    for (int i = 0; i < sellingItems; i++) {
-        if (itemNames[i] == query) {
+    int itemIndex;
+    bool onMarketPlace = true;
+    while (onMarketPlace) {
+        printTitle("Buyer > Market Place");
+        displayItems = 0;
+        for (int i = 0; i < sellingItems; i++) {
             displayItemIndex[displayItems] = i;
             displayItems++;
         }
+        itemIndex = displayItemsPage();
+        if (itemIndex != -1) {
+            buyerItemExtendedView(itemIndex, "Buyer > Market Place");
+        } else {
+            onMarketPlace = false;
+        }
     }
-    displayItemsPage();
+}
+
+void searchMarketPlace() {
+    int itemIndex;
+    string query;
+    bool onSearchPage = true;
+    while (onSearchPage) {
+
+        printTitle("Buyer > Search Market Place");
+        displayItems = 0;
+        showConsoleCursor(true);
+        cout << setw(optionsPadding) << "" << "Search: ";
+        cin.clear();
+        cin.sync();
+        getline(cin, query);
+        showConsoleCursor(false);
+        cout << endl;
+        for (int i = 0; i < sellingItems; i++) {
+            if (itemNames[i] == query) {
+                displayItemIndex[displayItems] = i;
+                displayItems++;
+            }
+        }
+        itemIndex = displayItemsPage();
+        if (itemIndex != -1) {
+            buyerItemExtendedView(itemIndex, "Buyer > Search Market Place");
+        } else {
+            onSearchPage = false;
+        }
+    }
 }
 
 void shopByCategories() {
+    int itemIndex;
     bool onCategoryScreen = true;
+    string categoryName;
     string categories[] = { "Cosmetics", "Electronics", "Consoles and Gaming", "Toys", "Home Appliances", "Sports Accessories", "Health and Beauty", "Groceries" };
     while (onCategoryScreen) {
         printTitle("Buyer > Categories");
@@ -541,7 +582,7 @@ void shopByCategories() {
         if (category == 9) {
             onCategoryScreen = false;
         } else {
-            string categoryName = categories[category - 1];
+            categoryName = categories[category - 1];
             displayItems = 0;
             for (int i = 0; i < sellingItems; i++) {
                 if (itemCategories[i] == categoryName) {
@@ -549,10 +590,45 @@ void shopByCategories() {
                     displayItems++;
                 }
             }
-            printTitle("Buyer > Categories > " + categoryName);
-            displayItemsPage();
+            buyerCategoryExtendedView(categoryName);
         }
     }
+}
+
+void buyerCategoryExtendedView(string categoryName) {
+    bool onCategoryView = true;
+    int itemIndex;
+    while (onCategoryView) {
+        printTitle("Buyer > Categories > " + categoryName);
+        itemIndex = displayItemsPage();
+        if (itemIndex != -1) {
+            buyerItemExtendedView(itemIndex, "Buyer > Categories > " + categoryName);
+        } else {
+            onCategoryView = false;
+        }
+    }
+}
+
+void buyerItemExtendedView(int itemIndex, string title) {
+    int option;
+    string itemName = itemNames[itemIndex];
+    string itemSeller = userfullNames[sellerIds[itemIndex]];
+    string itemDescription = itemDescriptions[itemIndex];
+    int itemPrice = itemPrices[itemIndex];
+    bool itemAvailable = (itemQuantities[itemIndex] != itemSold[itemIndex]);
+    printTitle(title + " > " + itemName);
+    cout << setw(optionsPadding) << "" << "Item Name: " << itemName << endl;
+    cout << setw(optionsPadding) << "" << "Item Seller: " << itemSeller << endl;
+    cout << setw(optionsPadding) << "" << "Item Description: " << itemDescription << endl;
+    cout << setw(optionsPadding) << "" << "Item Price: PKR " << itemPrice << endl;
+    cout << setw(optionsPadding) << "" << "Item Availability: " << (itemAvailable ? "In-Stock" : "Out-Of-Stock") << endl;
+    cout << endl;
+
+    cout << setw(optionsPadding) << "" << "   Add To Cart" << endl;
+    cout << setw(optionsPadding) << "" << "   Buy Now" << endl;
+    cout << setw(optionsPadding) << "" << "   Go Back" << endl;
+    option = handleOptionSelection(optionsPadding, wherey() - 3, 3, 1, false);
+    // if (option == 1 )
 }
 
 void signUpUser() {
@@ -598,7 +674,7 @@ void signUpUser() {
 
         cout << endl;
         if (uniqueUsername(username) && !containCommas) {
-            cout << setw(optionsPadding) << "" << "Account Created Sucessfully!!!" << endl;
+            cout << setw(optionsPadding) << "" << "Account Created Successfully!!!" << endl;
             confirmationDialog();
             onSignUpScreen = false;
             usernames[usersCount] = username;
@@ -646,33 +722,56 @@ void loadFiles() {
     usersFileHandle.close();
 
     rawData = "";
-    string sellerId, itemName, itemDescription, itemCategory, itemPrice, itemQuantity, itemSoldCount;
     fstream sellersFileHandle;
     sellersFileHandle.open(sellersFile, ios::in);
 
     while (getline(sellersFileHandle, rawData)) {
         if (rawData != "") {
-            sellerId = parseCSV(rawData, 1);
-            itemName = parseCSV(rawData, 2);
-            itemDescription = parseCSV(rawData, 3);
-            itemCategory = parseCSV(rawData, 4);
-            itemPrice = parseCSV(rawData, 5);
-            itemQuantity = parseCSV(rawData, 6);
-            itemSoldCount = parseCSV(rawData, 7);
-
-
-            sellerIds[sellingItems] = stoi(sellerId);
-            itemNames[sellingItems] = itemName;
-            itemDescriptions[sellingItems] = itemDescription;
-            itemCategories[sellingItems] = itemCategory;
-            itemPrices[sellingItems] = stof(itemPrice);
-            itemQuantities[sellingItems] = stoi(itemQuantity);
-            itemSold[sellingItems] = stoi(itemSoldCount);
+            sellerIds[sellingItems] = stoi(parseCSV(rawData, 1));
+            itemNames[sellingItems] = parseCSV(rawData, 2);
+            itemDescriptions[sellingItems] = parseCSV(rawData, 3);
+            itemCategories[sellingItems] = parseCSV(rawData, 4);
+            itemPrices[sellingItems] = stof(parseCSV(rawData, 5));
+            itemQuantities[sellingItems] = stoi(parseCSV(rawData, 6));
+            itemSold[sellingItems] = stoi(parseCSV(rawData, 7));
 
             sellingItems++;
         }
     }
     sellersFileHandle.close();
+
+    rawData = "";
+    fstream cartFileHandle;
+    cartFileHandle.open(cartFile, ios::in);
+
+    while (getline(cartFileHandle, rawData)) {
+        if (rawData != "") {
+            cartItemIds[cartItems] = stoi(parseCSV(rawData, 1));
+            cartBuyerIds[cartItems] = stoi(parseCSV(rawData, 2));
+            cartItemPrices[cartItems] = stof(parseCSV(rawData, 3));
+            cartItemQuantities[cartItems] = stoi(parseCSV(rawData, 4));
+            cartItems++;
+        }
+    }
+    cartFileHandle.close();
+
+    rawData = "";
+    fstream orderFileHandle;
+    orderFileHandle.open(orderFile, ios::in);
+
+    while (getline(orderFileHandle, rawData)) {
+        if (rawData != "") {
+            orderItemIds[orderItems] = stoi(parseCSV(rawData, 1));
+            orderBuyerIds[orderItems] = stoi(parseCSV(rawData, 2));
+            orderItemPrices[orderItems] = stof(parseCSV(rawData, 3));
+            orderItemQuantities[orderItems] = stoi(parseCSV(rawData, 4));
+            orderItemTrackingCodes[orderItems] = stoi(parseCSV(rawData, 5));
+            orderDates[orderItems] = parseCSV(rawData, 6);
+            orderArrivalTimes[orderItems] = stoi(parseCSV(rawData, 7));
+            orderItems++;
+        }
+    }
+    orderFileHandle.close();
 }
 
 void writeUsersData() {
@@ -682,7 +781,7 @@ void writeUsersData() {
     usersFileHandle.close();
 }
 
-void writeItemData() {
+void writeSellerData() {
     fstream sellersFileHandle;
     sellersFileHandle.open(sellersFile, ios::app);
     sellersFileHandle << sellerIds[sellingItems] << "," << itemNames[sellingItems] << "," << itemDescriptions[sellingItems] << "," << itemCategories[sellingItems] << ",";
@@ -700,16 +799,50 @@ void reWriteSellerData() {
     sellersFileHandle.close();
 }
 
+void writeCartData() {
+    fstream cartFileHandle;
+    cartFileHandle.open(cartFile, ios::app);
+    cartFileHandle << cartItemIds[cartItems] << "," << cartBuyerIds[cartItems] << "," << cartItemPrices[cartItems] << "," << cartItemQuantities[cartItems] << endl;
+    cartFileHandle.close();
+}
+
+void reWriteCartData() {
+    fstream cartFileHandle;
+    cartFileHandle.open(cartFile, ios::out);
+    for (int i = 0; i < sellingItems; i++) {
+        cartFileHandle << cartItemIds[i] << "," << cartBuyerIds[i] << "," << cartItemPrices[i] << "," << cartItemQuantities[i] << endl;
+    }
+    cartFileHandle.close();
+}
+
+void writeOrderData() {
+    fstream orderFileHandle;
+    orderFileHandle.open(orderFile, ios::app);
+    orderFileHandle << orderItemIds[orderItems] << "," << orderBuyerIds[orderItems] << "," << orderItemPrices[orderItems] << "," << orderItemQuantities[orderItems];
+    orderFileHandle << "," << orderItemTrackingCodes[orderItems] << "," << orderDates[orderItems] << "," << orderArrivalTimes[orderItems] << endl;
+    orderFileHandle.close();
+}
+
+void reWriteOrderData() {
+    fstream orderFileHandle;
+    orderFileHandle.open(orderFile, ios::out);
+    for (int i = 0; i < sellingItems; i++) {
+        orderFileHandle << orderItemIds[i] << "," << orderBuyerIds[i] << "," << orderItemPrices[i] << "," << orderItemQuantities[i];
+        orderFileHandle << "," << orderItemTrackingCodes[i] << "," << orderDates[i] << "," << orderArrivalTimes[i] << endl;
+    }
+    orderFileHandle.close();
+}
+
 bool validateLogin(string username, string password) {
-    bool loginSucessful = false;
+    bool loginSuccessful = false;
     for (int i = 0; i < usersCount; i++) {
         if (username == usernames[i] && password == passwords[i]) {
-            loginSucessful = true;
+            loginSuccessful = true;
             sessionUserIndex = i;
             break;
         }
     }
-    return loginSucessful;
+    return loginSuccessful;
 }
 
 bool uniqueUsername(string username) {
