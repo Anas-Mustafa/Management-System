@@ -88,6 +88,7 @@ void placeOrder(int itemIndex, int itemQuantity, int percentageDiscount);
 void viewShoppingCart();
 void shoppingCartExtended(int cartIndex);
 void checkoutItem(int cartIndex);
+void checkOutAll();
 void trackOrder();
 void removeDeletedItemFromCarts(int itemIndex);
 void removeCartItem(int cartIndex);
@@ -529,6 +530,8 @@ void openBuyerAccount() {
             shopByCategories();
         } else if (option == 4) {
             viewShoppingCart();
+        } else if (option == 5) {
+            checkOutAll();
         } else if (option == 6) {
             trackOrder();
         } else {
@@ -799,7 +802,7 @@ void shoppingCartExtended(int cartIndex) {
     cout << setw(optionsPadding) << "" << "Item Seller: " << itemSeller << endl;
     cout << setw(optionsPadding) << "" << "Item Quantity: " << itemQuantity << endl;
     cout << setw(optionsPadding) << "" << "Item Price Per Unit: PKR " << itemPrice << endl;
-    cout << setw(optionsPadding) << "" << "Total Price: PKR " << itemPrice << endl;
+    cout << setw(optionsPadding) << "" << "Total Price: PKR " << totalPrice << endl;
     cout << endl;
     cout << setw(optionsPadding) << "" << "   Checkout Item" << endl;
     cout << setw(optionsPadding) << "" << "   Remove from Cart" << endl;
@@ -834,6 +837,27 @@ void checkoutItem(int cartIndex) {
     removeCartItem(cartIndex);
 }
 
+void checkOutAll() {
+    printTitle("Buyer > Shopping Cart > Check Out All");
+    cout << setw(optionsPadding) << "" << "Do You Want to Check Out All Cart Items?" << endl << endl;
+    cout << setw(optionsPadding) << "" << "   Yes" << endl;
+    cout << setw(optionsPadding) << "" << "   Cancel" << endl;
+    int currentY = wherey();
+    int option = handleOptionSelection(optionsPadding, currentY - 2, 2, 1, false);
+    if (option == 2) return;
+    int i = 0;
+    while (i < cartItems) {
+        if (cartBuyerIds[i] == sessionUserIndex) {
+            checkoutItem(i);
+        } else {
+            i++;
+        }
+    }
+    reWriteCartData();
+    gotoPosition(0, currentY + 2);
+    cout << setw(optionsPadding) << "" << "All Items Checked Out Successfully!!!" << endl << endl;
+    confirmationDialog();
+}
 
 void trackOrder() {
     printTitle("Buyer > Track Order");
