@@ -50,6 +50,14 @@ int orderArrivalTimes[ARRAY_SIZE];
 int displayItems;
 int displayItemIndex[ARRAY_SIZE];
 
+// Notifications Data
+string notificationFile = "notificationData.csv";
+int notificationsCount = 0;
+int notificationsUserIds[ARRAY_SIZE];
+string notificationsText[ARRAY_SIZE];
+int userNotifications = 0;
+int userNotificationsIndex[ARRAY_SIZE];
+
 int TERMINAL_WIDTH, TERMINAL_HEIGHT;
 int HEADER_WIDTH, HEADER_HEIGHT;
 int TITLE_HEIGHT = 2;
@@ -77,6 +85,7 @@ void viewSellerStats();
 
 void openBuyerAccount();
 void printBuyerMenu();
+void loadUserNotifications();
 void viewMarketPlace();
 void searchMarketPlace();
 void shopByCategories();
@@ -92,6 +101,12 @@ void checkOutAll();
 void trackOrder();
 void removeDeletedItemFromCarts(int itemIndex);
 void removeCartItem(int cartIndex);
+void removeOrderItem(int orderIndex);
+void displayNotificationsCount();
+void viewNotifications();
+void removeUserNotifications();
+void addItemRemovalNotification(int cartIndex);
+void addItemDeliveryNotification(int orderIndex);
 
 bool validateLogin(string username, string password);
 bool uniqueUsername(string username);
@@ -106,8 +121,11 @@ void writeCartData();
 void reWriteCartData();
 void writeOrderData();
 void reWriteOrderData();
+void writeNotificationsData();
+void reWriteNotificationsData();
 
 void setTerminalDimensions();
+void checkForDeliveredItems();
 string parseCSV(string dataText, int index);
 string getCurrentDate();
 string currentDateTime();
@@ -139,13 +157,15 @@ void showConsoleCursor(bool flag);
 
 int main() {
     showConsoleCursor(false);
+    currentDate = getCurrentDate();
     loadFiles();
+    cout << "here" << endl;
+    checkForDeliveredItems();
     setTerminalDimensions();
     startApplication();
 }
 
 void startApplication() {
-    currentDate = getCurrentDate();
     int options = 4, offset = 1;
     bool isScrollable = false;
     bool applicationRunning = true;
@@ -480,6 +500,7 @@ void removeSellerItem(int itemIndex) {
 
 void removeItem(int itemIndex) {
     int i = 0;
+    removeDeletedItemFromCarts(itemIndex);
     while (i < sellingItems) {
         if (itemIndex == i) {
             for (int j = i; j < sellingItems - 1; j++) {
@@ -496,7 +517,6 @@ void removeItem(int itemIndex) {
             i++;
         }
     }
-    removeDeletedItemFromCarts(itemIndex);
     sellingItems--;
     loadSellerItems();
     reWriteSellerData();
@@ -515,13 +535,17 @@ void viewSellerStats() {
 }
 
 void openBuyerAccount() {
+    int currentY = 0;
+    loadUserNotifications();
     int options = 8;
     int option;
     bool onBuyerScreen = true;
     while (onBuyerScreen) {
         printTitle("Buyer");
         printBuyerMenu();
-        option = handleOptionSelection(optionsPadding, wherey() - options, options, 1, false);
+        currentY = wherey();
+        if (userNotifications > 0) displayNotificationsCount();
+        option = handleOptionSelection(optionsPadding, currentY - options, options, 1, false);
         if (option == 1) {
             viewMarketPlace();
         } else if (option == 2) {
@@ -534,6 +558,8 @@ void openBuyerAccount() {
             checkOutAll();
         } else if (option == 6) {
             trackOrder();
+        } else if (option == 7) {
+            viewNotifications();
         } else {
             onBuyerScreen = false;
         }
@@ -549,6 +575,16 @@ void printBuyerMenu() {
     cout << setw(optionsPadding) << "" << "   Track Your Order" << endl;
     cout << setw(optionsPadding) << "" << "   Notifications" << endl;
     cout << setw(optionsPadding) << "" << "   Log Out" << endl;
+}
+
+void loadUserNotifications() {
+    userNotifications = 0;
+    for (int i = 0; i < notificationsCount; i++) {
+        if (notificationsUserIds[i] == sessionUserIndex) {
+            userNotificationsIndex[userNotifications] = i;
+            userNotifications++;
+        }
+    }
 }
 
 void viewMarketPlace() {
@@ -708,7 +744,7 @@ void handleOrder(int itemIndex, char orderType) {
                 cout << setw(optionsPadding) << "" << "   " << (orderType == 'C' ? "Add to Shopping Cart" : "Order Now") << endl;
                 currentY = wherey();
                 option = handleOptionSelection(optionsPadding, currentY - 2, 2, 1, false);
-                gotoPosition(0, currentY + 2);
+                gotoPosition(0, currentY + 1);
                 if (option == 1) {
                     showConsoleCursor(true);
                     cout << setw(optionsPadding) << "" << "COUPON: ";
@@ -736,7 +772,6 @@ void handleOrder(int itemIndex, char orderType) {
                 }
             }
         }
-        cout << endl;
         confirmationDialog();
     }
 }
@@ -875,6 +910,7 @@ void removeDeletedItemFromCarts(int itemIndex) {
     int i = 0;
     while (i < cartItems) {
         if (cartItemIds[i] == itemIndex) {
+            addItemRemovalNotification(i);
             removeCartItem(i);
         } else {
             i++;
@@ -891,6 +927,73 @@ void removeCartItem(int cartIndex) {
         cartItemQuantities[j] = cartItemQuantities[j + 1];
     }
     cartItems--;
+}
+
+void removeOrderItem(int orderIndex) {
+    for (int j = orderIndex; j < orderItems - 1; j++) {
+        orderItemIds[j] = orderItemIds[j + 1];
+        orderBuyerIds[j] = orderBuyerIds[j + 1];
+        orderItemPrices[j] = orderItemPrices[j + 1];
+        orderItemQuantities[j] = orderItemQuantities[j + 1];
+        orderItemTrackingCodes[j] = orderItemTrackingCodes[j + 1];
+        orderDates[j] = orderDates[j + 1];
+        orderArrivalTimes[j] = orderArrivalTimes[j + 1];
+    }
+    orderItems--;
+}
+
+void displayNotificationsCount() {
+    gotoPosition((TERMINAL_WIDTH - 31) / 2, TERMINAL_HEIGHT - 1);
+    cout << "YOU HAVE " << userNotifications << " NEW NOTIFICATION(S)";
+}
+
+void viewNotifications() {
+    printTitle("Buyer > Notifications");
+    if (userNotifications <= 0) {
+        cout << setw((TERMINAL_WIDTH - 22) / 2) << "" << "NO NOTIFICATIONS FOUND" << endl << endl;
+        cout << setw(optionsPadding) << "" << ">  Go Back" << endl;
+        getch();
+    } else {
+        for (int i = 0; i < userNotifications; i++) {
+            cout << setw(optionsPadding) << "" << i + 1 << ". " << notificationsText[userNotificationsIndex[i]] << endl;
+        }
+        cout << endl;
+        cout << setw(optionsPadding) << "" << ">  Mark As Read" << endl;
+        getch();
+        removeUserNotifications();
+    }
+}
+
+void removeUserNotifications() {
+    for (int i = userNotifications - 1; i >= 0; i--) {
+        for (int j = userNotificationsIndex[i]; j < notificationsCount; j++) {
+            notificationsUserIds[j] = notificationsUserIds[j + 1];
+            notificationsText[j] = notificationsText[j + 1];
+        }
+        notificationsCount--;
+    }
+    userNotifications = 0;
+    reWriteNotificationsData();
+}
+
+void addItemRemovalNotification(int cartIndex) {
+    int itemQuantity = cartItemQuantities[cartIndex];
+    string itemName = itemNames[cartItemIds[cartIndex]];
+    string notificationText = to_string(itemQuantity) + "x " + itemName + " Removed From Shopping Cart as it was Removed by the Seller";
+    notificationsUserIds[notificationsCount] = cartBuyerIds[cartIndex];
+    notificationsText[notificationsCount] = notificationText;
+    writeNotificationsData();
+    notificationsCount++;
+}
+
+void addItemDeliveryNotification(int orderIndex) {
+    int itemQuantity = orderItemQuantities[orderIndex];
+    string itemName = itemNames[orderItemIds[orderIndex]];
+    string notificationText = to_string(itemQuantity) + "x " + itemName + " Has Been Delivered";
+    notificationsUserIds[notificationsCount] = orderBuyerIds[orderIndex];
+    notificationsText[notificationsCount] = notificationText;
+    writeNotificationsData();
+    notificationsCount++;
 }
 
 bool validCoupon(string coupon) {
@@ -1037,6 +1140,19 @@ void loadFiles() {
         }
     }
     orderFileHandle.close();
+
+    rawData = "";
+    fstream notificationFileHandle;
+    notificationFileHandle.open(notificationFile, ios::in);
+    while (getline(notificationFileHandle, rawData)) {
+        if (rawData != "") {
+            notificationsUserIds[notificationsCount] = stoi(parseCSV(rawData, 1));
+            notificationsText[notificationsCount] = parseCSV(rawData, 2);
+            notificationsCount++;
+        }
+    }
+    notificationFileHandle.close();
+
 }
 
 void writeUsersData() {
@@ -1098,6 +1214,22 @@ void reWriteOrderData() {
     orderFileHandle.close();
 }
 
+void writeNotificationsData() {
+    fstream notificationFileHandle;
+    notificationFileHandle.open(notificationFile, ios::app);
+    notificationFileHandle << notificationsUserIds[notificationsCount] << "," << notificationsText[notificationsCount] << endl;
+    notificationFileHandle.close();
+}
+
+void reWriteNotificationsData() {
+    fstream notificationFileHandle;
+    notificationFileHandle.open(notificationFile, ios::out);
+    for (int i = 0; i < notificationsCount; i++) {
+        notificationFileHandle << notificationsUserIds[i] << "," << notificationsText[i] << endl;
+    }
+    notificationFileHandle.close();
+}
+
 bool validateLogin(string username, string password) {
     bool loginSuccessful = false;
     for (int i = 0; i < usersCount; i++) {
@@ -1157,6 +1289,20 @@ void setTerminalDimensions() {
     optionsPadding = (float)15 / 100 * TERMINAL_WIDTH;
 }
 
+void checkForDeliveredItems() {
+    int i = 0, daysLeft;
+    while (i < orderItems) {
+        daysLeft = orderArrivalTimes[i] - dateDifference(currentDate, orderDates[i]);
+        if (daysLeft <= 0) {
+            addItemDeliveryNotification(i);
+            removeOrderItem(i);
+        } else {
+            i++;
+        }
+    }
+    reWriteOrderData();
+}
+
 string parseCSV(string dataText, int index) {
     string indexValue = "";
     int currentIndex = 1;
@@ -1203,6 +1349,7 @@ int dateToDays(string date) {
     string day = { date[8], date[9], '\0' };
     return stoi(day) + stoi(month) * 30 + (stoi(year) - 2000) * 365;
 }
+
 int generateTrackingCode() {
     int trackingCode = 10000 + (rand() % 89999);
     while (!uniqueCode(trackingCode)) {
