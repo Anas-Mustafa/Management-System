@@ -5,6 +5,12 @@
 #include <windows.h>
 using namespace std;
 
+// iomanip library usage: 
+// iomanip for formatting and allignment of text on terminal
+// setw(optionsPadding) >> "" before every print is for leaving
+// empty space equal to value set in optionsPadding 
+// and left to allign text to left
+
 const int ARRAY_SIZE = 50;
 int sessionUserIndex;
 string currentDate;
@@ -161,7 +167,6 @@ int main() {
     showConsoleCursor(false);
     currentDate = getCurrentDate();
     loadFiles();
-    cout << "here" << endl;
     checkForDeliveredItems();
     setTerminalDimensions();
     startApplication();
@@ -173,6 +178,7 @@ void startApplication() {
     bool applicationRunning = true;
     while (applicationRunning) {
         printMainScreen();
+        // get user input based on selection
         int option = handleOptionSelection(optionsPadding, wherey() - options, options, offset, isScrollable);
         if (option == 1) {
             loginUser();
@@ -224,6 +230,7 @@ void loginUser() {
         }
     }
     if (loggedIn) {
+        // display customized for user of each type
         if (userTypes[sessionUserIndex] == "Seller") {
             loadSellerItems();
             openSellerAccount();
@@ -269,6 +276,7 @@ void printSellerMenu() {
 }
 
 void loadSellerItems() {
+    // load all sellers data for displaying purposes
     displayItems = 0;
     for (int i = 0; i < sellingItems; i++) {
         if (sellerIds[i] == sessionUserIndex) {
@@ -307,8 +315,12 @@ void addSellerItem() {
         }
         int arrowY = wherey();
         option = handleOptionSelection(optionsPadding, arrowY - 8, 8, 1, false);
+        // setting itemCategory from option number 
+        // as options are 1 indexed and array 0 indexed
         itemCategory = categories[option - 1];
 
+        // sanitizing user input for commas as storage is CSV
+        // setting true if any of input contains it
         containCommas = detectCommas(itemName) ? true : containCommas;
         containCommas = detectCommas(itemDescription) ? true : containCommas;
 
@@ -344,6 +356,7 @@ void viewSellerItem() {
     while (onViewScreen) {
         printTitle("Seller > View Item");
         itemIndex = displayItemsPage('I');
+        // displaying extended view of selected item
         if (itemIndex != -1) {
             sellerItemExtendedView(itemIndex);
         } else {
@@ -365,6 +378,7 @@ void sellerItemExtendedView(int itemIndex) {
         cout << setw(optionsPadding) << "" << "Item Sold: " << itemSold[itemIndex] << endl;
         cout << endl;
 
+        // displaying options for each item 
         cout << setw(optionsPadding) << "" << "   Update Item Details" << endl;
         cout << setw(optionsPadding) << "" << "   Remove Item From Market Place" << endl;
         cout << setw(optionsPadding) << "" << "   Go Back" << endl;
@@ -402,6 +416,7 @@ void updateItemDetails(int itemIndex) {
     bool onUpdateScreen = true;
     int option;
     while (onUpdateScreen) {
+        // updating certain attribute based on user selection
         printTitle("Seller > Update Item > " + displayName);
         cout << setw(optionsPadding) << "" << "Select Attribute to Update: " << endl;
         cout << setw(optionsPadding) << "" << "   Item Name" << endl;
@@ -508,9 +523,12 @@ void removeSellerItem(int itemIndex) {
 }
 
 void removeItem(int itemIndex) {
+    // an item removed from seller must be removed from
+    // the all users cart and tracking order list
     int i = 0;
     removeDeletedItemFromCarts(itemIndex);
     removeDeletedItemFromOrders(itemIndex);
+    // removing specified item and updating array accordingly
     while (i < sellingItems) {
         if (itemIndex == i) {
             for (int j = i; j < sellingItems - 1; j++) {
@@ -528,6 +546,7 @@ void removeItem(int itemIndex) {
         }
     }
     sellingItems--;
+    // loading updating date for displaying
     loadSellerItems();
     reWriteSellerData();
 }
@@ -588,6 +607,7 @@ void printBuyerMenu() {
 }
 
 void loadUserNotifications() {
+    // loading current user notifications from all notifications
     userNotifications = 0;
     for (int i = 0; i < notificationsCount; i++) {
         if (notificationsUserIds[i] == sessionUserIndex) {
@@ -603,6 +623,7 @@ void viewMarketPlace() {
     while (onMarketPlace) {
         printTitle("Buyer > Market Place");
         displayItems = 0;
+        // loading all items for displaying 
         for (int i = 0; i < sellingItems; i++) {
             displayItemIndex[displayItems] = i;
             displayItems++;
@@ -631,6 +652,7 @@ void searchMarketPlace() {
         getline(cin, query);
         showConsoleCursor(false);
         cout << endl;
+        // loading items that satisfy search 
         for (int i = 0; i < sellingItems; i++) {
             if (itemNames[i] == query) {
                 displayItemIndex[displayItems] = i;
@@ -664,6 +686,7 @@ void shopByCategories() {
         } else {
             categoryName = categories[category - 1];
             displayItems = 0;
+            // loading items of specified category
             for (int i = 0; i < sellingItems; i++) {
                 if (itemCategories[i] == categoryName) {
                     displayItemIndex[displayItems] = i;
@@ -731,6 +754,7 @@ void handleOrder(int itemIndex, char orderType) {
     if (orderType == 'C') {
         title = "Add to Cart";
     }
+    // take user order and add it to shopping cart or place order accordingly
     while (onOrderScreen) {
         bool itemUnavailable = (itemQuantities[itemIndex] == itemSold[itemIndex]);
         int remainingItem = itemQuantities[itemIndex] - itemSold[itemIndex];
@@ -819,6 +843,7 @@ void viewShoppingCart() {
     bool viewingCart = true;
     while (viewingCart) {
         displayItems = 0;
+        // loading current user shopping cart
         for (int i = 0; i < cartItems; i++) {
             if (cartBuyerIds[i] == sessionUserIndex) {
                 displayItemIndex[displayItems] = i;
@@ -913,6 +938,7 @@ void trackOrder() {
     while (trackingOrder) {
         printTitle("Buyer > Track Order");
         displayItems = 0;
+        // load current users orders
         for (int i = 0; i < orderItems; i++) {
             if (orderBuyerIds[i] == sessionUserIndex) {
                 displayItemIndex[displayItems] = i;
@@ -934,6 +960,7 @@ void trackOrderExtended(int orderIndex) {
     string itemSeller = userfullNames[sellerIds[orderItemIds[orderIndex]]];
     int itemQuantity = orderItemQuantities[orderIndex];
     int trackingCode = orderItemTrackingCodes[orderIndex];
+    // calculate days left in order arrival based on order date
     int daysLeft = orderArrivalTimes[orderIndex] - dateDifference(currentDate, orderDates[orderIndex]);
     string orderDate = orderDates[orderIndex];
     float itemPrice = orderItemPrices[orderIndex];
@@ -1014,12 +1041,14 @@ void removeOrderItem(int orderIndex) {
 }
 
 void displayNotificationsCount() {
+    // goto center of the terminal in last line
     gotoPosition((TERMINAL_WIDTH - 31) / 2, TERMINAL_HEIGHT - 1);
     cout << "YOU HAVE " << userNotifications << " NEW NOTIFICATION(S)";
 }
 
 void viewNotifications() {
     printTitle("Buyer > Notifications");
+    // displaying notifications if they exists
     if (userNotifications <= 0) {
         cout << setw((TERMINAL_WIDTH - 22) / 2) << "" << "NO NOTIFICATIONS FOUND" << endl << endl;
         cout << setw(optionsPadding) << "" << ">  Go Back" << endl;
@@ -1036,6 +1065,7 @@ void viewNotifications() {
 }
 
 void removeUserNotifications() {
+    // remove current user notifications from all notifications
     for (int i = userNotifications - 1; i >= 0; i--) {
         for (int j = userNotificationsIndex[i]; j < notificationsCount; j++) {
             notificationsUserIds[j] = notificationsUserIds[j + 1];
@@ -1048,6 +1078,7 @@ void removeUserNotifications() {
 }
 
 void addItemRemovalNotification(int index, char deletionType) {
+    // create notification for item removal
     int itemQuantity;
     int userId;
     string itemName;
@@ -1071,6 +1102,7 @@ void addItemRemovalNotification(int index, char deletionType) {
 }
 
 void addItemDeliveryNotification(int orderIndex) {
+    // create item delivery notification 
     int itemQuantity = orderItemQuantities[orderIndex];
     string itemName = itemNames[orderItemIds[orderIndex]];
     string notificationText = to_string(itemQuantity) + "x " + itemName + " Has Been Delivered";
@@ -1120,11 +1152,13 @@ void signUpUser() {
         cin >> password;
         showConsoleCursor(false);
 
+        // validation for commas
         containCommas = detectCommas(fullname) ? true : containCommas;
         containCommas = detectCommas(username) ? true : containCommas;
         containCommas = detectCommas(password) ? true : containCommas;
 
         cout << endl;
+        // checking for unique names
         if (uniqueUsername(username) && !containCommas) {
             cout << setw(optionsPadding) << "" << "Account Created Successfully!!!" << endl;
             confirmationDialog();
@@ -1151,6 +1185,7 @@ void signUpUser() {
 
 
 void loadFiles() {
+    // loading User Files
     string rawData = "";
     string username, fullname, password, type;
     fstream usersFileHandle;
@@ -1173,6 +1208,7 @@ void loadFiles() {
     }
     usersFileHandle.close();
 
+    // loading Seller Files
     rawData = "";
     fstream sellersFileHandle;
     sellersFileHandle.open(sellersFile, ios::in);
@@ -1192,6 +1228,7 @@ void loadFiles() {
     }
     sellersFileHandle.close();
 
+    // loading Cart File
     rawData = "";
     fstream cartFileHandle;
     cartFileHandle.open(cartFile, ios::in);
@@ -1207,6 +1244,7 @@ void loadFiles() {
     }
     cartFileHandle.close();
 
+    // loading order file
     rawData = "";
     fstream orderFileHandle;
     orderFileHandle.open(orderFile, ios::in);
@@ -1225,6 +1263,7 @@ void loadFiles() {
     }
     orderFileHandle.close();
 
+    // loading notification file 
     rawData = "";
     fstream notificationFileHandle;
     notificationFileHandle.open(notificationFile, ios::in);
@@ -1374,6 +1413,9 @@ void setTerminalDimensions() {
 }
 
 void checkForDeliveredItems() {
+    // check if items are delivered by finding 
+    // time differece between current and order date
+    // remove those items and send notification
     int i = 0, daysLeft;
     while (i < orderItems) {
         daysLeft = orderArrivalTimes[i] - dateDifference(currentDate, orderDates[i]);
@@ -1388,6 +1430,7 @@ void checkForDeliveredItems() {
 }
 
 string parseCSV(string dataText, int index) {
+    // extracting text from index part depending on commas
     string indexValue = "";
     int currentIndex = 1;
     for (int i = 0; dataText[i] != '\0'; i++) {
@@ -1435,9 +1478,10 @@ int dateToDays(string date) {
 }
 
 int generateTrackingCode() {
-    int trackingCode = 10000 + (rand() % 89999);
+    // generate unique random token between 10000 and 99999
+    int trackingCode = 10000 + (rand() % 90000);
     while (!uniqueCode(trackingCode)) {
-        trackingCode = 10000 + (rand() % 89999);
+        trackingCode = 10000 + (rand() % 90000);
     }
     return trackingCode;
 }
@@ -1452,6 +1496,7 @@ bool uniqueCode(int code) {
 }
 
 int generateArrivalTime() {
+    // randomaly generating arrival time of order between 1 and 7
     return 1 + (rand() % 7);
 }
 
@@ -1468,6 +1513,10 @@ bool tryAgainDialog() {
 }
 
 int displayItemsPage(char displayType) {
+    // display items with scrolling window
+    // depending on size of screen first get number of items per page
+    // display those item and depending on key press move between pages
+    // calculate item index when enter is pressed and return it
     int itemIndex, option;
     int lastStart = -1;
     if (displayItems == 0) {
@@ -1640,18 +1689,20 @@ int handleOptionSelection(int arrowX, int arrowY, int numberOfOptions, int offse
         if (key == downKey) {
             removeArrow(arrowX, movingY);
             movingY += offset;
+            // reseting position for out of range position
             if (movingY > arrowY + offset * (numberOfOptions - 1)) {
                 movingY = arrowY;
             }
         } else if (key == upKey) {
             removeArrow(arrowX, movingY);
             movingY -= offset;
+            // reseting position for out of range position
             if (movingY < arrowY) {
                 movingY = arrowY + offset * (numberOfOptions - 1);
             }
         } else if (key == enterKey) {
             break;
-        } else if (key == backspaceKey) {
+        } else if (key == backspaceKey) { // moving arrow to option in both of these
             removeArrow(arrowX, movingY);
             movingY = arrowY + offset * (numberOfOptions - 1);
             displayArrow(arrowX, movingY);
