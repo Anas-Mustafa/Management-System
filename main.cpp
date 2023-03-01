@@ -99,13 +99,15 @@ void shoppingCartExtended(int cartIndex);
 void checkoutItem(int cartIndex);
 void checkOutAll();
 void trackOrder();
+void trackOrderExtended(int orderIndex);
 void removeDeletedItemFromCarts(int itemIndex);
+void removeDeletedItemFromOrders(int itemIndex);
 void removeCartItem(int cartIndex);
 void removeOrderItem(int orderIndex);
 void displayNotificationsCount();
 void viewNotifications();
 void removeUserNotifications();
-void addItemRemovalNotification(int cartIndex);
+void addItemRemovalNotification(int index, char deletionType);
 void addItemDeliveryNotification(int orderIndex);
 
 bool validateLogin(string username, string password);
@@ -410,12 +412,13 @@ void updateItemDetails(int itemIndex) {
         int currentY = wherey();
         option = handleOptionSelection(optionsPadding, currentY - 5, 5, 1, false);
         gotoPosition(0, currentY + 1);
-        showConsoleCursor(true);
         if (option == 1) {
+            showConsoleCursor(true);
             cout << setw(optionsPadding) << "" << "Updated Item Name: ";
             cin.clear();
             cin.sync();
             getline(cin, itemName);
+            showConsoleCursor(false);
             cout << endl;
             if (detectCommas(itemName)) {
                 cout << setw(optionsPadding) << "" << "Invalid Input!!!" << endl;
@@ -430,10 +433,12 @@ void updateItemDetails(int itemIndex) {
                 onUpdateScreen = false;
             }
         } else if (option == 2) {
+            showConsoleCursor(true);
             cout << setw(optionsPadding) << "" << "Updated Item Description: ";
             cin.clear();
             cin.sync();
             getline(cin, itemDescription);
+            showConsoleCursor(false);
             cout << endl;
             if (detectCommas(itemDescription)) {
                 cout << setw(optionsPadding) << "" << "Invalid Input!!!" << endl;
@@ -448,16 +453,20 @@ void updateItemDetails(int itemIndex) {
                 onUpdateScreen = false;
             }
         } else if (option == 3) {
+            showConsoleCursor(true);
             cout << setw(optionsPadding) << "" << "Updated Item Price: ";
             cin >> itemPrice;
+            showConsoleCursor(false);
             cout << endl;
             itemPrices[itemIndex] = itemPrice;
             cout << setw(optionsPadding) << "" << "Item Price Updated Successfully!!!" << endl;
             confirmationDialog();
             onUpdateScreen = false;
         } else if (option == 4) {
+            showConsoleCursor(true);
             cout << setw(optionsPadding) << "" << "Add Additional Stock: ";
             cin >> additionalStock;
+            showConsoleCursor(false);
             cout << endl;
             itemQuantities[itemIndex] += additionalStock;
             cout << setw(optionsPadding) << "" << "Item Quantity Updated Successfully!!!" << endl;
@@ -501,6 +510,7 @@ void removeSellerItem(int itemIndex) {
 void removeItem(int itemIndex) {
     int i = 0;
     removeDeletedItemFromCarts(itemIndex);
+    removeDeletedItemFromOrders(itemIndex);
     while (i < sellingItems) {
         if (itemIndex == i) {
             for (int j = i; j < sellingItems - 1; j++) {
@@ -772,6 +782,7 @@ void handleOrder(int itemIndex, char orderType) {
                 }
             }
         }
+        cout << endl;
         confirmationDialog();
     }
 }
@@ -848,16 +859,18 @@ void shoppingCartExtended(int cartIndex) {
     if (option == 1) {
         checkoutItem(cartIndex);
         reWriteCartData();
-        cout << setw(optionsPadding) << "" << itemName << " Checked Out Successfully!!!" << endl;
+        cout << setw(optionsPadding) << "" << itemName << " Checked Out Successfully!!!" << endl << endl;
         confirmationDialog();
     } else if (option == 2) {
         itemSold[cartItemIds[cartIndex]] -= cartItemQuantities[cartIndex];
         removeCartItem(cartIndex);
         reWriteCartData();
-        cout << setw(optionsPadding) << "" << itemName << " Remove From Cart Successfully!!!" << endl;
+        reWriteSellerData();
+        cout << setw(optionsPadding) << "" << itemName << " Removed From Cart Successfully!!!" << endl << endl;
         confirmationDialog();
     }
 }
+
 
 void checkoutItem(int cartIndex) {
     orderItemIds[orderItems] = cartItemIds[cartIndex];
@@ -895,23 +908,81 @@ void checkOutAll() {
 }
 
 void trackOrder() {
-    printTitle("Buyer > Track Order");
-    displayItems = 0;
-    for (int i = 0; i < orderItems; i++) {
-        if (orderBuyerIds[i] == sessionUserIndex) {
-            displayItemIndex[displayItems] = i;
-            displayItems++;
+    bool trackingOrder = true;
+    int orderIndex;
+    while (trackingOrder) {
+        printTitle("Buyer > Track Order");
+        displayItems = 0;
+        for (int i = 0; i < orderItems; i++) {
+            if (orderBuyerIds[i] == sessionUserIndex) {
+                displayItemIndex[displayItems] = i;
+                displayItems++;
+            }
+        }
+        orderIndex = displayItemsPage('O');
+        if (orderIndex != -1) {
+            trackOrderExtended(orderIndex);
+        } else {
+            trackingOrder = false;
         }
     }
-    displayItemsPage('O');
+}
+
+void trackOrderExtended(int orderIndex) {
+    int option;
+    string itemName = itemNames[orderItemIds[orderIndex]];
+    string itemSeller = userfullNames[sellerIds[orderItemIds[orderIndex]]];
+    int itemQuantity = orderItemQuantities[orderIndex];
+    int trackingCode = orderItemTrackingCodes[orderIndex];
+    int daysLeft = orderArrivalTimes[orderIndex] - dateDifference(currentDate, orderDates[orderIndex]);
+    string orderDate = orderDates[orderIndex];
+    float itemPrice = orderItemPrices[orderIndex];
+    float totalPrice = itemPrice * itemQuantity;
+    printTitle("Buyer > Track Order > " + itemName);
+    cout << setw(optionsPadding) << "" << "Item Name: " << itemName << endl;
+    cout << setw(optionsPadding) << "" << "Item Seller: " << itemSeller << endl;
+    cout << setw(optionsPadding) << "" << "Tracking Code: " << trackingCode << endl;
+    cout << setw(optionsPadding) << "" << "Ordered Date: " << orderDate << endl;
+    cout << setw(optionsPadding) << "" << "Item Arrival Days Left: " << daysLeft << endl;
+    cout << setw(optionsPadding) << "" << "Item Quantity: " << itemQuantity << endl;
+    cout << setw(optionsPadding) << "" << "Item Price Per Unit: PKR " << itemPrice << endl;
+    cout << setw(optionsPadding) << "" << "Total Price: PKR " << totalPrice << endl;
+
+    cout << endl;
+    cout << setw(optionsPadding) << "" << "   Cancel Order" << endl;
+    cout << setw(optionsPadding) << "" << "   Go Back" << endl;
+    int currentY = wherey();
+    option = handleOptionSelection(optionsPadding, currentY - 2, 2, 1, false);
+    gotoPosition(0, currentY + 2);
+    if (option == 1) {
+        itemSold[orderItemIds[orderIndex]] -= orderItemQuantities[orderIndex];
+        removeOrderItem(orderIndex);
+        reWriteOrderData();
+        reWriteSellerData();
+        cout << setw(optionsPadding) << "" << "Order Cancelled Successfully!!!" << endl;
+        confirmationDialog();
+    }
 }
 
 void removeDeletedItemFromCarts(int itemIndex) {
     int i = 0;
     while (i < cartItems) {
         if (cartItemIds[i] == itemIndex) {
-            addItemRemovalNotification(i);
+            addItemRemovalNotification(i, 'C');
             removeCartItem(i);
+        } else {
+            i++;
+        }
+    }
+    reWriteCartData();
+}
+
+void removeDeletedItemFromOrders(int itemIndex) {
+    int i = 0;
+    while (i < orderItems) {
+        if (orderItemIds[i] == itemIndex) {
+            addItemRemovalNotification(i, 'O');
+            removeOrderItem(i);
         } else {
             i++;
         }
@@ -976,11 +1047,24 @@ void removeUserNotifications() {
     reWriteNotificationsData();
 }
 
-void addItemRemovalNotification(int cartIndex) {
-    int itemQuantity = cartItemQuantities[cartIndex];
-    string itemName = itemNames[cartItemIds[cartIndex]];
-    string notificationText = to_string(itemQuantity) + "x " + itemName + " Removed From Shopping Cart as it was Removed by the Seller";
-    notificationsUserIds[notificationsCount] = cartBuyerIds[cartIndex];
+void addItemRemovalNotification(int index, char deletionType) {
+    int itemQuantity;
+    int userId;
+    string itemName;
+    string deletionMessage;
+    if (deletionType == 'C') {
+        userId = cartBuyerIds[index];
+        itemQuantity = cartItemQuantities[index];
+        itemName = itemNames[cartItemIds[index]];
+        deletionMessage = " Removed From Shopping Cart";
+    } else {
+        userId = orderBuyerIds[index];
+        itemQuantity = orderItemQuantities[index];
+        itemName = itemNames[orderItemIds[index]];
+        deletionMessage = " Order Cancelled";
+    }
+    string notificationText = to_string(itemQuantity) + "x " + itemName + deletionMessage + " as it was Removed by the Seller";
+    notificationsUserIds[notificationsCount] = userId;
     notificationsText[notificationsCount] = notificationText;
     writeNotificationsData();
     notificationsCount++;
