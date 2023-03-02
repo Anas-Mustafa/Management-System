@@ -1,7 +1,3 @@
 *.exe
 .vscode/
-sellersData.csv
-usersData.csv
-cartData.csv
-orderData.csv
-notificationData.csv
+*.csv
