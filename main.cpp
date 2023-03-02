@@ -6,10 +6,10 @@
 using namespace std;
 
 // iomanip library usage: 
-// iomanip for formatting and allignment of text on terminal
+// iomanip for formatting and alignment of text on terminal
 // setw(optionsPadding) >> "" before every print is for leaving
 // empty space equal to value set in optionsPadding 
-// and left to allign text to left
+// and left to align text to left
 
 const int ARRAY_SIZE = 50;
 int sessionUserIndex;
@@ -64,6 +64,13 @@ string notificationsText[ARRAY_SIZE];
 int userNotifications = 0;
 int userNotificationsIndex[ARRAY_SIZE];
 
+// Coupon Data
+string couponFile = "couponData.csv";
+int couponCount = 0;
+int couponSellerIds[ARRAY_SIZE];
+string coupons[ARRAY_SIZE];
+int couponDiscounts[ARRAY_SIZE];
+
 int TERMINAL_WIDTH, TERMINAL_HEIGHT;
 int HEADER_WIDTH, HEADER_HEIGHT;
 int TITLE_HEIGHT = 2;
@@ -88,6 +95,10 @@ void removeSellerItemScreen();
 void removeSellerItem(int itemIndex);
 void removeItem(int itemIndex);
 void viewSellerStats();
+void addCoupon();
+void removeCoupon();
+int findCouponIndex();
+bool validateCoupon(string coupon);
 
 void openBuyerAccount();
 void printBuyerMenu();
@@ -119,7 +130,7 @@ void addItemDeliveryNotification(int orderIndex);
 bool validateLogin(string username, string password);
 bool uniqueUsername(string username);
 bool detectCommas(string text);
-bool validCoupon(string coupon);
+int applyCoupon(string coupon, int sellerId);
 
 void loadFiles();
 void writeUsersData();
@@ -131,6 +142,8 @@ void writeOrderData();
 void reWriteOrderData();
 void writeNotificationsData();
 void reWriteNotificationsData();
+void writeCouponDate();
+void reWriteCouponDate();
 
 void setTerminalDimensions();
 void checkForDeliveredItems();
@@ -258,6 +271,10 @@ void openSellerAccount() {
             removeSellerItemScreen();
         } else if (option == 5) {
             viewSellerStats();
+        } else if (option == 6) {
+            addCoupon();
+        } else if (option == 7) {
+            removeCoupon();
         } else {
             onSellerScreen = false;
         }
@@ -301,9 +318,9 @@ void addSellerItem() {
         cout << setw(optionsPadding) << "" << "Item Name: ";
         cin.clear();
         cin.sync();
-        getline(cin, itemName);
+        getline(cin >> ws, itemName);
         cout << setw(optionsPadding) << "" << "Item Description: ";
-        getline(cin, itemDescription);
+        getline(cin >> ws, itemDescription);
         cout << setw(optionsPadding) << "" << "Item Price: ";
         cin >> itemPrice;
         cout << setw(optionsPadding) << "" << "Item Quantity: ";
@@ -432,7 +449,7 @@ void updateItemDetails(int itemIndex) {
             cout << setw(optionsPadding) << "" << "Updated Item Name: ";
             cin.clear();
             cin.sync();
-            getline(cin, itemName);
+            getline(cin >> ws, itemName);
             showConsoleCursor(false);
             cout << endl;
             if (detectCommas(itemName)) {
@@ -444,6 +461,7 @@ void updateItemDetails(int itemIndex) {
             } else {
                 itemNames[itemIndex] = itemName;
                 cout << setw(optionsPadding) << "" << "Item Name Updated Successfully!!!" << endl;
+                cout << endl;
                 confirmationDialog();
                 onUpdateScreen = false;
             }
@@ -452,7 +470,7 @@ void updateItemDetails(int itemIndex) {
             cout << setw(optionsPadding) << "" << "Updated Item Description: ";
             cin.clear();
             cin.sync();
-            getline(cin, itemDescription);
+            getline(cin >> ws, itemDescription);
             showConsoleCursor(false);
             cout << endl;
             if (detectCommas(itemDescription)) {
@@ -563,6 +581,110 @@ void viewSellerStats() {
     getch();
 }
 
+void addCoupon() {
+    string coupon;
+    int discount;
+    bool addingCoupon = true;
+    while (addingCoupon) {
+        int lastCouponIndex = findCouponIndex();
+        printTitle("Seller > Add Coupon");
+        showConsoleCursor(true);
+        cout << setw(optionsPadding) << "" << "Enter Coupon: ";
+        cin >> coupon;
+        showConsoleCursor(false);
+        cout << endl;
+        if (validateCoupon(coupon)) {
+            showConsoleCursor(true);
+            cout << setw(optionsPadding) << "" << "Percentage Discount Amount to Apply to All Your Items: ";
+            cin >> discount;
+            showConsoleCursor(false);
+            if (discount < 5 || discount > 50) {
+                cout << setw(optionsPadding) << "" << "Discount Amount Must be in range 5-50" << endl;
+            } else {
+                cout << endl;
+                if (lastCouponIndex == -1) {
+                    cout << setw(optionsPadding) << "" << "Your Coupon Has Been Added Successfully!!!" << endl;
+                    couponSellerIds[couponCount] = sessionUserIndex;
+                    coupons[couponCount] = coupon;
+                    couponDiscounts[couponCount] = discount;
+                    couponCount++;
+                    writeCouponDate();
+                } else {
+                    cout << setw(optionsPadding) << "" << "Your Coupon Has Been Updated Successfully!!!" << endl;
+                    couponSellerIds[lastCouponIndex] = sessionUserIndex;
+                    coupons[lastCouponIndex] = coupon;
+                    couponDiscounts[lastCouponIndex] = discount;
+                    reWriteCouponDate();
+                }
+                addingCoupon = false;
+            }
+        }
+        cout << endl;
+        confirmationDialog();
+    }
+}
+
+void removeCoupon() {
+    printTitle("Seller > Remove Coupon");
+    cout << setw(optionsPadding) << "" << "Are You Sure You want to Remove Coupon?" << endl;
+    cout << setw(optionsPadding) << "" << endl;
+    cout << setw(optionsPadding) << "" << "   Yes" << endl;
+    cout << setw(optionsPadding) << "" << "   Cancel" << endl;
+    int currentY = wherey();
+    int option = handleOptionSelection(optionsPadding, currentY - 2, 2, 1, false);
+    if (option == 1) {
+        for (int i = 0; i < couponCount; i++) {
+            if (couponSellerIds[i] == sessionUserIndex) {
+                for (int j = i; j < couponCount - 1; j++) {
+                    couponSellerIds[j] = couponSellerIds[j + 1];
+                    coupons[j] = coupons[j + 1];
+                    couponDiscounts[j] = couponDiscounts[j + 1];
+                }
+                couponCount--;
+                reWriteCouponDate();
+                break;
+            }
+        }
+        gotoPosition(0, currentY + 2);
+        cout << setw(optionsPadding) << "" << "Coupon Has Been Removed Successfully!!!" << endl;
+        cout << endl;
+        confirmationDialog();
+    }
+}
+
+int findCouponIndex() {
+    int index = -1;
+    for (int i = 0; i < couponCount; i++) {
+        if (couponSellerIds[i] == sessionUserIndex) {
+            index = i;
+            break;
+        }
+    }
+    return index;
+}
+
+bool validateCoupon(string coupon) {
+    int couponLength = 6;
+    if (coupon.length() != couponLength) {
+        cout << setw(optionsPadding) << "" << "Coupon Length Needs to Be 6" << endl;
+        return false;
+    }
+    for (int i = 0; i < couponLength; i++) {
+        if ((coupon[i] >= 'A' && coupon[i] <= 'Z') || (coupon[i] >= '0' && coupon[i] <= '9')) {
+            continue;
+        } else {
+            cout << setw(optionsPadding) << "" << "Coupon Can Only Contain Capital Alphabets and Digits" << endl;
+            return false;
+        }
+    }
+    for (int i = 0; i < couponCount; i++) {
+        if (coupon == coupons[i]) {
+            cout << setw(optionsPadding) << "" << "This Coupon Already Exists" << endl;
+            return false;
+        }
+    }
+    return true;
+}
 void openBuyerAccount() {
     int currentY = 0;
     loadUserNotifications();
@@ -649,7 +771,7 @@ void searchMarketPlace() {
         cout << setw(optionsPadding) << "" << "Search: ";
         cin.clear();
         cin.sync();
-        getline(cin, query);
+        getline(cin >> ws, query);
         showConsoleCursor(false);
         cout << endl;
         // loading items that satisfy search 
@@ -749,7 +871,8 @@ void handleOrder(int itemIndex, char orderType) {
     bool onOrderScreen = true;
     string coupon;
     string itemName = itemNames[itemIndex];
-    int itemQuantity, currentY, option;
+    int itemSellerId = sellerIds[itemIndex];
+    int itemQuantity, currentY, option, discount;
     string title = "Order Item";
     if (orderType == 'C') {
         title = "Add to Cart";
@@ -784,14 +907,21 @@ void handleOrder(int itemIndex, char orderType) {
                     cout << setw(optionsPadding) << "" << "COUPON: ";
                     cin >> coupon;
                     showConsoleCursor(false);
-                    if (!validCoupon(coupon)) {
+                    discount = applyCoupon(coupon, itemSellerId);
+                    if (discount == 0) {
                         cout << setw(optionsPadding) << "" << "INVALID COUPON!!!" << endl;
                     } else {
+                        cout << setw(optionsPadding) << "" << "Coupon Applied Successfully!!!" << endl;
                         if (orderType == 'C') {
-                            addItemToCart(itemIndex, itemQuantity, 0);
+                            cout << endl;
+                            cout << setw(optionsPadding) << "" << "Item Added to Cart Successfully!!!" << endl;
+                            addItemToCart(itemIndex, itemQuantity, discount);
                         } else {
-                            placeOrder(itemIndex, itemQuantity, 0);
+                            cout << endl;
+                            cout << setw(optionsPadding) << "" << "Order Placed Successfully!!!" << endl;
+                            placeOrder(itemIndex, itemQuantity, discount);
                         }
+                        onOrderScreen = false;
                     }
                 } else if (option == 2) {
                     cout << endl;
@@ -1112,8 +1242,15 @@ void addItemDeliveryNotification(int orderIndex) {
     notificationsCount++;
 }
 
-bool validCoupon(string coupon) {
-    return false;
+int applyCoupon(string coupon, int sellerId) {
+    int discount = 0;
+    for (int i = 0; i < couponCount; i++) {
+        if (coupons[i] == coupon && couponSellerIds[i] == sellerId) {
+            discount = couponDiscounts[i];
+            break;
+        }
+    }
+    return discount;
 }
 void signUpUser() {
     int option;
@@ -1145,7 +1282,7 @@ void signUpUser() {
         cout << setw(optionsPadding) << "" << "Full Name: ";
         cin.clear();
         cin.sync();
-        getline(cin, fullname);
+        getline(cin >> ws, fullname);
         cout << setw(optionsPadding) << "" << "Username: ";
         cin >> username;
         cout << setw(optionsPadding) << "" << "Password: ";
@@ -1160,7 +1297,7 @@ void signUpUser() {
         cout << endl;
         // checking for unique names
         if (uniqueUsername(username) && !containCommas) {
-            cout << setw(optionsPadding) << "" << "Account Created Successfully!!!" << endl;
+            cout << setw(optionsPadding) << "" << "Account Created Successfully!!!" << endl << endl;
             confirmationDialog();
             onSignUpScreen = false;
             usernames[usersCount] = username;
@@ -1276,6 +1413,19 @@ void loadFiles() {
     }
     notificationFileHandle.close();
 
+    // loading Coupons File
+    rawData = "";
+    fstream couponFileHandle;
+    couponFileHandle.open(couponFile, ios::in);
+    while (getline(couponFileHandle, rawData)) {
+        if (rawData != "") {
+            couponSellerIds[couponCount] = stoi(parseCSV(rawData, 1));
+            coupons[couponCount] = parseCSV(rawData, 2);
+            couponDiscounts[couponCount] = stoi(parseCSV(rawData, 3));
+            couponCount++;
+        }
+    }
+    couponFileHandle.close();
 }
 
 void writeUsersData() {
@@ -1351,6 +1501,22 @@ void reWriteNotificationsData() {
         notificationFileHandle << notificationsUserIds[i] << "," << notificationsText[i] << endl;
     }
     notificationFileHandle.close();
+}
+
+void writeCouponDate() {
+    fstream couponFileHandle;
+    couponFileHandle.open(couponFile, ios::app);
+    couponFileHandle << couponSellerIds[couponCount] << "," << coupons[couponCount] << "," << couponDiscounts[couponCount] << endl;
+    couponFileHandle.close();
+}
+
+void reWriteCouponDate() {
+    fstream couponFileHandle;
+    couponFileHandle.open(couponFile, ios::out);
+    for (int i = 0; i < couponCount; i++) {
+        couponFileHandle << couponSellerIds[i] << "," << coupons[i] << "," << couponDiscounts[i] << endl;
+    }
+    couponFileHandle.close();
 }
 
 bool validateLogin(string username, string password) {
