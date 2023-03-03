@@ -11,10 +11,10 @@ using namespace std;
 // empty space equal to value set in optionsPadding 
 // and left to align text to left
 
-const int ARRAY_SIZE = 50;
 int sessionUserIndex;
 string currentDate;
 
+const int ARRAY_SIZE = 50;
 // Users Data 
 string usersFile = "usersData.csv";
 int usersCount = 0;
@@ -82,6 +82,7 @@ void printMainScreen();
 
 void loginUser();
 void signUpUser();
+void displayManual();
 
 void openSellerAccount();
 void printSellerMenu();
@@ -131,6 +132,7 @@ bool validateLogin(string username, string password);
 bool uniqueUsername(string username);
 bool detectCommas(string text);
 int applyCoupon(string coupon, int sellerId);
+string getInput(string displayText, string inputType, bool canContainSpaces);
 
 void loadFiles();
 void writeUsersData();
@@ -161,7 +163,7 @@ int displayItemsPage(char displayType);
 void displayItem(int itemIndex);
 void displayCartItem(int itemIndex);
 void displayOrderItem(int itemIndex);
-void clearItems(int startingY);
+void clearDisplay(int startingY, int endingY);
 
 void printTitle(string title);
 void printHeader();
@@ -198,7 +200,7 @@ void startApplication() {
         } else if (option == 2) {
             signUpUser();
         } else if (option == 3) {
-            // displayManual();
+            displayManual();
         } else if (option == 4) {
             applicationRunning = false;
         }
@@ -221,12 +223,8 @@ void loginUser() {
 
     while (onLoginScreen) {
         printTitle("Login");
-        showConsoleCursor(true);
-        cout << setw(optionsPadding) << "" << "Username: ";
-        cin >> username;
-        cout << setw(optionsPadding) << "" << "Password: ";
-        cin >> password;
-        showConsoleCursor(false);
+        username = getInput("Username", "AlphaNumeric", false);
+        password = getInput("Password", "Password", false);
         cout << endl;
 
         if (validateLogin(username, password)) {
@@ -314,18 +312,10 @@ void addSellerItem() {
     while (addingItem) {
         containCommas = false;
         printTitle("Seller > Add Item");
-        showConsoleCursor(true);
-        cout << setw(optionsPadding) << "" << "Item Name: ";
-        cin.clear();
-        cin.sync();
-        getline(cin >> ws, itemName);
-        cout << setw(optionsPadding) << "" << "Item Description: ";
-        getline(cin >> ws, itemDescription);
-        cout << setw(optionsPadding) << "" << "Item Price: ";
-        cin >> itemPrice;
-        cout << setw(optionsPadding) << "" << "Item Quantity: ";
-        cin >> itemQuantity;
-        showConsoleCursor(false);
+        itemName = getInput("Item Name", "AlphaNumeric", true);
+        itemDescription = getInput("Item Description", "AlphaNumeric", true);
+        itemPrice = stof(getInput("Item Price", "Float", false));
+        itemQuantity = stoi(getInput("Item Quantity", "Integer", false));
         cout << setw(optionsPadding) << "" << "Item Category: " << endl;
         for (int i = 0; i < 8; i++) {
             cout << setw(optionsPadding) << "" << "   " << categories[i] << endl;
@@ -445,12 +435,7 @@ void updateItemDetails(int itemIndex) {
         option = handleOptionSelection(optionsPadding, currentY - 5, 5, 1, false);
         gotoPosition(0, currentY + 1);
         if (option == 1) {
-            showConsoleCursor(true);
-            cout << setw(optionsPadding) << "" << "Updated Item Name: ";
-            cin.clear();
-            cin.sync();
-            getline(cin >> ws, itemName);
-            showConsoleCursor(false);
+            itemName = getInput("Updated Item Name", "AlphaNumeric", true);
             cout << endl;
             if (detectCommas(itemName)) {
                 cout << setw(optionsPadding) << "" << "Invalid Input!!!" << endl;
@@ -466,12 +451,7 @@ void updateItemDetails(int itemIndex) {
                 onUpdateScreen = false;
             }
         } else if (option == 2) {
-            showConsoleCursor(true);
-            cout << setw(optionsPadding) << "" << "Updated Item Description: ";
-            cin.clear();
-            cin.sync();
-            getline(cin >> ws, itemDescription);
-            showConsoleCursor(false);
+            itemDescription = getInput("Updated Item Description", "AlphaNumeric", true);
             cout << endl;
             if (detectCommas(itemDescription)) {
                 cout << setw(optionsPadding) << "" << "Invalid Input!!!" << endl;
@@ -486,20 +466,14 @@ void updateItemDetails(int itemIndex) {
                 onUpdateScreen = false;
             }
         } else if (option == 3) {
-            showConsoleCursor(true);
-            cout << setw(optionsPadding) << "" << "Updated Item Price: ";
-            cin >> itemPrice;
-            showConsoleCursor(false);
+            itemPrice = stof(getInput("Updated Item Price", "Float", false));
             cout << endl;
             itemPrices[itemIndex] = itemPrice;
             cout << setw(optionsPadding) << "" << "Item Price Updated Successfully!!!" << endl;
             confirmationDialog();
             onUpdateScreen = false;
         } else if (option == 4) {
-            showConsoleCursor(true);
-            cout << setw(optionsPadding) << "" << "Add Additional Stock: ";
-            cin >> additionalStock;
-            showConsoleCursor(false);
+            additionalStock = stoi(getInput("Additional Stock", "Integer", false));
             cout << endl;
             itemQuantities[itemIndex] += additionalStock;
             cout << setw(optionsPadding) << "" << "Item Quantity Updated Successfully!!!" << endl;
@@ -588,16 +562,10 @@ void addCoupon() {
     while (addingCoupon) {
         int lastCouponIndex = findCouponIndex();
         printTitle("Seller > Add Coupon");
-        showConsoleCursor(true);
-        cout << setw(optionsPadding) << "" << "Enter Coupon: ";
-        cin >> coupon;
-        showConsoleCursor(false);
+        coupon = getInput("Coupon Code", "AlphaNumeric", false);
         cout << endl;
         if (validateCoupon(coupon)) {
-            showConsoleCursor(true);
-            cout << setw(optionsPadding) << "" << "Percentage Discount Amount to Apply to All Your Items: ";
-            cin >> discount;
-            showConsoleCursor(false);
+            discount = stoi(getInput("Discount Percentage", "Integer", false));
             if (discount < 5 || discount > 50) {
                 cout << setw(optionsPadding) << "" << "Discount Amount Must be in range 5-50" << endl;
             } else {
@@ -767,12 +735,7 @@ void searchMarketPlace() {
 
         printTitle("Buyer > Search Market Place");
         displayItems = 0;
-        showConsoleCursor(true);
-        cout << setw(optionsPadding) << "" << "Search: ";
-        cin.clear();
-        cin.sync();
-        getline(cin >> ws, query);
-        showConsoleCursor(false);
+        query = getInput("Search Query", "AlphaNumeric", true);
         cout << endl;
         // loading items that satisfy search 
         for (int i = 0; i < sellingItems; i++) {
@@ -888,10 +851,7 @@ void handleOrder(int itemIndex, char orderType) {
             cout << setw(optionsPadding) << "" << "ITEM UNAVAILABLE!!!" << endl;
             onOrderScreen = false;
         } else {
-            showConsoleCursor(true);
-            cout << setw(optionsPadding) << "" << "Item Quantity: ";
-            cin >> itemQuantity;
-            showConsoleCursor(false);
+            itemQuantity = stoi(getInput("Item Quantity", "Integer", false));
             if (itemQuantity < 1 || itemQuantity > remainingItem) {
                 cout << setw(optionsPadding) << "" << "ITEM QUANTITY OUT OF RANGE!!!" << endl;
                 cout << setw(optionsPadding) << "" << "Valid Range is 1-" << remainingItem << endl;
@@ -903,10 +863,7 @@ void handleOrder(int itemIndex, char orderType) {
                 option = handleOptionSelection(optionsPadding, currentY - 2, 2, 1, false);
                 gotoPosition(0, currentY + 1);
                 if (option == 1) {
-                    showConsoleCursor(true);
-                    cout << setw(optionsPadding) << "" << "COUPON: ";
-                    cin >> coupon;
-                    showConsoleCursor(false);
+                    coupon = getInput("COUPON", "AlphaNumeric", false);
                     discount = applyCoupon(coupon, itemSellerId);
                     if (discount == 0) {
                         cout << setw(optionsPadding) << "" << "INVALID COUPON!!!" << endl;
@@ -1252,6 +1209,65 @@ int applyCoupon(string coupon, int sellerId) {
     }
     return discount;
 }
+
+string getInput(string displayText, string inputType, bool canContainSpaces) {
+    string temp;
+    bool gettingInput = true;
+    int digitsCount = 0, spaceCount = 0, specialWordCount = 0, dotCount = 0, minusCount = 0;
+    int startingY = wherey();
+    while (gettingInput) {
+        digitsCount = 0, spaceCount = 0, specialWordCount = 0, dotCount = 0, minusCount = 0;
+        clearDisplay(startingY, wherey() + 1);
+        gotoPosition(0, startingY);
+        cout << setw(optionsPadding) << "" << displayText << ": ";
+        cin.clear();
+        cin.sync();
+        showConsoleCursor(true);
+        getline(cin >> ws, temp);
+        showConsoleCursor(false);
+
+        for (int i = 0; i < temp.length(); i++) {
+            if ((temp[i] >= 'A' && temp[i] <= 'Z') || (temp[i] >= 'a' && temp[i] <= 'z') || (temp[i] >= '0' && temp[i] <= '9') || temp[i] == ' ' || temp[i] == '.' || temp[i] == '-') {
+                if (temp[i] == ' ') {
+                    spaceCount++;
+                } else if (temp[i] == '.') {
+                    dotCount++;
+                } else if (temp[i] == '-') {
+                    minusCount++;
+                } else if ((temp[i] >= '0' && temp[i] <= '9')) {
+                    digitsCount++;
+                }
+            } else {
+                specialWordCount++;
+            }
+        }
+        if ((inputType == "Integer" || inputType == "Float") && minusCount == 1) {
+            cout << setw(optionsPadding) << "" << displayText << " Cannot Be Negative" << endl << endl;
+        } else if (inputType == "Integer" && digitsCount != temp.length()) {
+            cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Numbers" << endl << endl;
+        } else if (inputType == "Float" && !(digitsCount == temp.length() || (digitsCount == temp.length() - 1 && dotCount == 1))) {
+            cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Numbers and ." << endl << endl;
+        } else if (specialWordCount) {
+            cout << setw(optionsPadding) << "" << displayText << " Cannot Contain Special Characters" << endl << endl;
+        } else if (spaceCount > 0 && !canContainSpaces) {
+            cout << setw(optionsPadding) << "" << displayText << " Cannot Contain Spaces" << endl << endl;
+        } else if (inputType == "Password" && temp.length() < 6) {
+            cout << setw(optionsPadding) << "" << displayText << " Need To Be at least of 6 characters" << endl << endl;
+        } else if (inputType == "Alphabetic" && !(digitsCount == 0 && dotCount == 0)) {
+            cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Alphabets" << endl << endl;
+        } else if (inputType == "AlphaNumeric" && dotCount > 0) {
+            cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Alphabets And Numbers" << endl << endl;
+        } else {
+            gettingInput = false;
+        }
+
+        if (gettingInput) {
+            confirmationDialog();
+        }
+    }
+    return temp;
+}
+
 void signUpUser() {
     int option;
     int options = 2, offset = 1;
@@ -1277,17 +1293,10 @@ void signUpUser() {
             userType = "Buyer";
         }
 
-        showConsoleCursor(true);
         gotoPosition(0, currentY + 1);
-        cout << setw(optionsPadding) << "" << "Full Name: ";
-        cin.clear();
-        cin.sync();
-        getline(cin >> ws, fullname);
-        cout << setw(optionsPadding) << "" << "Username: ";
-        cin >> username;
-        cout << setw(optionsPadding) << "" << "Password: ";
-        cin >> password;
-        showConsoleCursor(false);
+        fullname = getInput("Full Name", "Alphabetic", true);
+        username = getInput("Username", "AlphaNumeric", false);
+        password = getInput("Password", "Password", false);
 
         // validation for commas
         containCommas = detectCommas(fullname) ? true : containCommas;
@@ -1318,6 +1327,19 @@ void signUpUser() {
             }
         }
     }
+}
+
+void displayManual() {
+    printTitle("Application Manual");
+    cout << setw(optionsPadding) << "" << "Navigation System: " << endl << endl;
+    cout << setw(optionsPadding) << "" << "1. Up/Down Arrow Key - Move Between Options" << endl << endl;
+    cout << setw(optionsPadding) << "" << "2. Right/Left Arrow Key - Move Between Different Pages" << endl;
+    cout << setw(optionsPadding) << "" << "   Right/Left Arrow Key Can Only Be Used When This Text Appears" << endl;
+    cout << setw(optionsPadding) << "" << "   USE RIGHT AND LEFT ARROW KEY TO SCROLL BETWEEN PAGES" << endl << endl;
+    cout << setw(optionsPadding) << "" << "3. Enter Key - Select The Option With Cursor" << endl << endl;
+    cout << setw(optionsPadding) << "" << "4. Backspace Key - Go Back To Last Menu OR Exit Current Menu" << endl << endl;
+    cout << setw(optionsPadding) << "" << "5. Number Keys - Select Option Corresponding to Key Pressed" << endl << endl;
+    confirmationDialog();
 }
 
 
@@ -1580,7 +1602,7 @@ void setTerminalDimensions() {
 
 void checkForDeliveredItems() {
     // check if items are delivered by finding 
-    // time differece between current and order date
+    // time difference between current and order date
     // remove those items and send notification
     int i = 0, daysLeft;
     while (i < orderItems) {
@@ -1662,7 +1684,7 @@ bool uniqueCode(int code) {
 }
 
 int generateArrivalTime() {
-    // randomaly generating arrival time of order between 1 and 7
+    // randomly generating arrival time of order between 1 and 7
     return 1 + (rand() % 7);
 }
 
@@ -1700,7 +1722,7 @@ int displayItemsPage(char displayType) {
     }
     while (onDisplayScreen) {
         if (lastStart != startValue) {
-            clearItems(startingY);
+            clearDisplay(startingY, TERMINAL_HEIGHT - 1);
             for (int i = startValue; i < endValue; i++) {
                 itemIndex = displayItemIndex[i];
                 if (displayType == 'I')
@@ -1773,9 +1795,9 @@ void displayOrderItem(int itemIndex) {
     cout << endl;
 }
 
-void clearItems(int startingY) {
+void clearDisplay(int startingY, int endingY) {
     gotoPosition(0, startingY);
-    for (int i = startingY; i < TERMINAL_HEIGHT - 1; i++) {
+    for (int i = startingY; i < endingY; i++) {
         for (int j = 0; j < TERMINAL_WIDTH; j++) {
             cout << " ";
         }
