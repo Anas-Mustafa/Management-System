@@ -177,6 +177,7 @@ void removeArrow(int x, int y);
 void gotoPosition(int x, int y);
 int wherey();
 void showConsoleCursor(bool flag);
+void setColor(int color);
 
 int main() {
     showConsoleCursor(false);
@@ -1247,13 +1248,13 @@ string getInput(string displayText, string inputType, bool canContainSpaces) {
             cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Numbers" << endl << endl;
         } else if (inputType == "Float" && !(digitsCount == temp.length() || (digitsCount == temp.length() - 1 && dotCount == 1))) {
             cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Numbers and ." << endl << endl;
-        } else if (specialWordCount) {
-            cout << setw(optionsPadding) << "" << displayText << " Cannot Contain Special Characters" << endl << endl;
         } else if (spaceCount > 0 && !canContainSpaces) {
             cout << setw(optionsPadding) << "" << displayText << " Cannot Contain Spaces" << endl << endl;
         } else if (inputType == "Password" && temp.length() < 6) {
             cout << setw(optionsPadding) << "" << displayText << " Need To Be at least of 6 characters" << endl << endl;
-        } else if (inputType == "Alphabetic" && !(digitsCount == 0 && dotCount == 0)) {
+        } else if (specialWordCount && inputType != "Password") {
+            cout << setw(optionsPadding) << "" << displayText << " Cannot Contain Special Characters" << endl << endl;
+        } else if (inputType == "Alphabetic" && !(digitsCount == 0 && dotCount == 0 && minusCount == 0)) {
             cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Alphabets" << endl << endl;
         } else if (inputType == "AlphaNumeric" && dotCount > 0) {
             cout << setw(optionsPadding) << "" << displayText << " Can Only Contain Alphabets And Numbers" << endl << endl;
@@ -1808,8 +1809,11 @@ void clearDisplay(int startingY, int endingY) {
 
 void printTitle(string title) {
     system("cls");
+    setColor(013);
     printHeader();
+    setColor(012);
     cout << setw(optionsPadding) << "" << "DARWAZA.PK > " << title << endl << endl;
+    setColor(07);
 }
 
 void printHeader() {
@@ -1951,4 +1955,9 @@ void showConsoleCursor(bool flag) {
     GetConsoleCursorInfo(out, &cursorInfo);
     cursorInfo.bVisible = flag;
     SetConsoleCursorInfo(out, &cursorInfo);
+}
+
+void setColor(int color) {
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(handle, color);
 }
